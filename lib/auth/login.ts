@@ -6,10 +6,15 @@ export async function signIn(
 ) {
   const supabase = createClient();
 
-  return await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
+
+  return {
+    data,
+    error,
+  };
 }
 
 export async function signOut() {

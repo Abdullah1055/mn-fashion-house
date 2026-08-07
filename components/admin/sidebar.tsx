@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 
 import { NAV_ITEMS } from "./nav-items";
 
+import { LogoutButton } from "./logout-button";
+
 export function Sidebar() {
   const pathname = usePathname();
 
@@ -25,8 +27,7 @@ export function Sidebar() {
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
 
-            const active =
-              pathname === item.href;
+            const active = pathname === item.href;
 
             return (
               <Link
@@ -39,13 +40,15 @@ export function Sidebar() {
                 }`}
               >
                 <Icon size={18} />
-
-                {item.title}
+                <span>{item.title}</span>
               </Link>
             );
           })}
         </div>
       </nav>
+      <div className="border-t p-4">
+  <LogoutButton />
+</div>
     </aside>
   );
 }

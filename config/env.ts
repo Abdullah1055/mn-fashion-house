@@ -1,4 +1,4 @@
-function getEnv(name: string): string {
+function required(name: string) {
   const value = process.env[name];
 
   if (!value) {
@@ -9,6 +9,6 @@ function getEnv(name: string): string {
 }
 
 export const env = {
-  supabaseUrl: getEnv("NEXT_PUBLIC_SUPABASE_URL"),
-  supabaseAnonKey: getEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  supabaseUrl: required("NEXT_PUBLIC_SUPABASE_URL"),
+  supabaseAnonKey: required("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
 };

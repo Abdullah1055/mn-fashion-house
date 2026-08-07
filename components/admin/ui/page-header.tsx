@@ -1,22 +1,29 @@
+import Link from "next/link";
 import { ReactNode } from "react";
 
 type PageHeaderProps = {
   title: string;
   description?: string;
+
+  // New API
+  actionLabel?: string;
+  actionHref?: string;
+
+  // Backward compatibility
   action?: ReactNode;
 };
 
 export function PageHeader({
   title,
   description,
+  actionLabel,
+  actionHref,
   action,
 }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-5 border-b pb-6 md:flex-row md:items-center md:justify-between">
+    <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {title}
-        </h1>
+        <h1 className="text-3xl font-bold">{title}</h1>
 
         {description && (
           <p className="mt-2 text-neutral-500">
@@ -25,7 +32,16 @@ export function PageHeader({
         )}
       </div>
 
-      {action}
+      {action ? (
+        action
+      ) : actionHref && actionLabel ? (
+        <Link
+          href={actionHref}
+          className="rounded-lg bg-sky-600 px-5 py-3 text-white hover:bg-sky-700"
+        >
+          {actionLabel}
+        </Link>
+      ) : null}
     </div>
   );
 }

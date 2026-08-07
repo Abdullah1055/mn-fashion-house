@@ -9,7 +9,7 @@ type Props = {
   children: ReactNode;
 };
 
-export default async function AdminLayout({
+export default async function ProtectedLayout({
   children,
 }: Props) {
   await requireSession();

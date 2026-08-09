@@ -1,21 +1,22 @@
 import { notFound } from "next/navigation";
 
-import { ProductImageManager } from "@/components/product/product-image-manager";
+import { ProductVariantForm } from "@/components/product/product-variant-form";
+import { ProductVariantList } from "@/components/product/product-variant-list";
 
 import { getProductById } from "@/lib/services/product.service";
-import { getProductImages } from "@/lib/services/product-image.service";
+import { getProductVariants } from "@/lib/services/product-variant.service";
 
-export default async function ProductImagesPage({
+export default async function ProductVariantsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
 
-  const [product, images] =
+  const [product, variants] =
     await Promise.all([
       getProductById(id),
-      getProductImages(id),
+      getProductVariants(id),
     ]);
 
   if (!product) {
@@ -26,20 +27,25 @@ export default async function ProductImagesPage({
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold">
-          Product Images
+          Product Variants
         </h1>
 
         <p className="mt-2 text-neutral-500">
-          Manage images for{" "}
+          Manage size, color, pricing and
+          stock variants for{" "}
           <span className="font-medium text-neutral-900">
             {product.name}
           </span>
         </p>
       </div>
 
-      <ProductImageManager
+      <ProductVariantForm
         productId={product.id}
-        images={images}
+      />
+
+      <ProductVariantList
+        productId={product.id}
+        variants={variants}
       />
     </div>
   );

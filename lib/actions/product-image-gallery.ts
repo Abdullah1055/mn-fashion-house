@@ -115,3 +115,95 @@ export async function deleteProductImage(
     `/admin/products/${productId}/images/gallery`
   );
 }
+export async function reorderProductImages(
+  productId: string,
+  imageIds: string[]
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const supabase = await createClient();
+
+  if (!productId) {
+    return {
+      success: false,
+      error: "Product ID is required.",
+    };
+  }
+
+  if (!imageIds.length) {
+    return {
+      success: false,
+      error: "No images provided.",
+    };
+  }
+
+  const { data: existingImages, error } =
+    await supabase
+      .from("product_images")
+      .select("id")
+      .eq("product_id", productId);
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  const existingIds = new Set(
+    existingImages.map(
+      (image) => image.id
+    )
+  );
+
+  const allImagesBelongToProduct =
+    imageIds.every((id) =>
+      existingIds.has(id)
+    );
+
+  if (!allImagesBelongToProduct) {
+    return {
+      success: false,
+      error:
+        "Invalid image selection.",
+    };
+  }
+
+  for (
+    let index = 0;
+    index < imageIds.length;
+    index++
+  ) {
+    const { error: updateError } =
+      await supabase
+        .from("product_images")
+        .update({
+          sort_order: index,
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("id", imageIds[index])
+        .eq("product_id", productId);
+
+    if (updateError) {
+      return {
+        success: false,
+        error:
+          updateError.message,
+      };
+    }
+  }
+
+  revalidatePath(
+    `/admin/products/${productId}/images`
+  );
+
+  revalidatePath(
+    `/admin/products/${productId}/images/gallery`
+  );
+
+  return {
+    success: true,
+  };
+}

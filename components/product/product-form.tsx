@@ -1,175 +1,267 @@
 "use client";
 
-import { useMemo } from "react";
-import { useFormStatus } from "react-dom";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import type { Brand } from "@/types/brand";
+import type { Product } from "@/types/product";
 
 import {
   createProduct,
   updateProduct,
 } from "@/lib/actions/product";
 
-import type { Product } from "@/types/product";
-
-type Category = {
+type ProductCategory = {
   id: string;
   name: string;
 };
 
 type ProductFormProps = {
-  categories: Category[];
+  categories: ProductCategory[];
+  brands: Brand[];
   product?: Product;
 };
 
-function SubmitButton({
-  isEdit,
-}: {
-  isEdit: boolean;
-}) {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded-lg bg-sky-600 px-6 py-3 font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {pending
-        ? isEdit
-          ? "Updating..."
-          : "Saving..."
-        : isEdit
-          ? "Update Product"
-          : "Save Product"}
-    </button>
-  );
-}
-
 export function ProductForm({
   categories,
+  brands,
   product,
 }: ProductFormProps) {
-  const isEdit = Boolean(product);
+  const router = useRouter();
 
-  const action = useMemo(() => {
-    if (product) {
-      return updateProduct.bind(null, product.id);
+  const isEditMode = Boolean(product);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData(
+        event.currentTarget
+      );
+      if (isEditMode) {
+      await updateProduct(
+      product!.id,
+      formData
+      );
+     } else {
+      await createProduct(formData);
     }
 
-    return createProduct;
-  }, [product]);
+
+      router.refresh();
+    } catch (error) {
+      /*
+       * Next.js redirect() throws internally.
+       * Do not show redirect as an error.
+       */
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong.";
+
+      if (
+        !message.includes(
+          "NEXT_REDIRECT"
+        )
+      ) {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <form
-      action={action}
-      className="space-y-8 rounded-2xl border bg-white p-6 shadow-sm"
+      onSubmit={handleSubmit}
+      className="space-y-8"
     >
       {/* Basic Information */}
 
-      <section className="space-y-6">
-        <div>
+      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div className="mb-6">
           <h2 className="text-lg font-semibold">
             Basic Information
           </h2>
 
           <p className="mt-1 text-sm text-neutral-500">
-            Enter the basic information of your product.
+            Basic product details and
+            classification.
           </p>
         </div>
 
-        {/* Category */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Category */}
 
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            Category
-          </label>
+          <div>
+            <label
+              htmlFor="category_id"
+              className="mb-2 block text-sm font-medium"
+            >
+              Category
+            </label>
 
-          <select
-            name="category_id"
-            required
-            defaultValue={product?.category_id ?? ""}
-            className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-          >
-            <option value="">
-              Select Category
-            </option>
-
-            {categories.map((category) => (
-              <option
-                key={category.id}
-                value={category.id}
-              >
-                {category.name}
+            <select
+              id="category_id"
+              name="category_id"
+              required
+              defaultValue={
+                product?.category_id || ""
+              }
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            >
+              <option value="">
+                Select category
               </option>
-            ))}
-          </select>
-        </div>
 
-        {/* Product Name */}
+              {categories.map(
+                (category) => (
+                  <option
+                    key={category.id}
+                    value={category.id}
+                  >
+                    {category.name}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            Product Name
-          </label>
+          {/* Brand */}
 
-          <input
-            name="name"
-            type="text"
-            required
-            defaultValue={product?.name ?? ""}
-            placeholder="Enter product name"
-            className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-          />
-        </div>
+          <div>
+            <label
+              htmlFor="brand_id"
+              className="mb-2 block text-sm font-medium"
+            >
+              Brand
+            </label>
 
-        {/* Slug */}
+            <select
+              id="brand_id"
+              name="brand_id"
+              defaultValue={
+                product?.brand_id || ""
+              }
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            >
+              <option value="">
+                No brand
+              </option>
 
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            Slug
-          </label>
+              {brands
+                .filter(
+                  (brand) =>
+                    brand.is_active ||
+                    brand.id ===
+                      product?.brand_id
+                )
+                .map((brand) => (
+                  <option
+                    key={brand.id}
+                    value={brand.id}
+                  >
+                    {brand.name}
+                  </option>
+                ))}
+            </select>
+          </div>
 
-          <input
-            name="slug"
-            type="text"
-            required
-            defaultValue={product?.slug ?? ""}
-            placeholder="product-slug"
-            className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-          />
+          {/* Name */}
 
-          <p className="mt-1 text-xs text-neutral-500">
-            Use lowercase letters, numbers and hyphens.
-          </p>
-        </div>
+          <div>
+            <label
+              htmlFor="name"
+              className="mb-2 block text-sm font-medium"
+            >
+              Product Name
+            </label>
 
-        {/* SKU */}
+            <input
+              id="name"
+              name="name"
+              required
+              defaultValue={
+                product?.name || ""
+              }
+              placeholder="Enter product name"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            SKU
-          </label>
+          {/* Slug */}
 
-          <input
-            name="sku"
-            type="text"
-            defaultValue={product?.sku ?? ""}
-            placeholder="e.g. MN-TS-001"
-            className="h-11 w-full rounded-lg border border-neutral-300 px-3 uppercase outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-          />
+          <div>
+            <label
+              htmlFor="slug"
+              className="mb-2 block text-sm font-medium"
+            >
+              Slug
+            </label>
+
+            <input
+              id="slug"
+              name="slug"
+              required
+              defaultValue={
+                product?.slug || ""
+              }
+              placeholder="product-slug"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
+
+          {/* SKU */}
+
+          <div>
+            <label
+              htmlFor="sku"
+              className="mb-2 block text-sm font-medium"
+            >
+              SKU
+            </label>
+
+            <input
+              id="sku"
+              name="sku"
+              defaultValue={
+                product?.sku || ""
+              }
+              placeholder="SKU-001"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
         </div>
 
         {/* Short Description */}
 
-        <div>
-          <label className="mb-2 block text-sm font-medium">
+        <div className="mt-6">
+          <label
+            htmlFor="short_description"
+            className="mb-2 block text-sm font-medium"
+          >
             Short Description
           </label>
 
           <textarea
+            id="short_description"
             name="short_description"
             rows={3}
             defaultValue={
-              product?.short_description ?? ""
+              product?.short_description ||
+              ""
             }
             placeholder="Short product description"
             className="w-full rounded-lg border border-neutral-300 px-3 py-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
@@ -178,15 +270,21 @@ export function ProductForm({
 
         {/* Description */}
 
-        <div>
-          <label className="mb-2 block text-sm font-medium">
+        <div className="mt-6">
+          <label
+            htmlFor="description"
+            className="mb-2 block text-sm font-medium"
+          >
             Description
           </label>
 
           <textarea
+            id="description"
             name="description"
             rows={7}
-            defaultValue={product?.description ?? ""}
+            defaultValue={
+              product?.description || ""
+            }
             placeholder="Detailed product description"
             className="w-full rounded-lg border border-neutral-300 px-3 py-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           />
@@ -195,79 +293,81 @@ export function ProductForm({
 
       {/* Pricing */}
 
-      <section className="space-y-6 border-t pt-8">
-        <div>
+      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div className="mb-6">
           <h2 className="text-lg font-semibold">
             Pricing
           </h2>
 
           <p className="mt-1 text-sm text-neutral-500">
-            Manage purchase and selling prices.
+            Configure product cost and
+            selling prices.
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
-          {/* Purchase Cost */}
-
+        <div className="grid gap-6 md:grid-cols-3">
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="purchase_cost"
+              className="mb-2 block text-sm font-medium"
+            >
               Purchase Cost
             </label>
 
             <input
+              id="purchase_cost"
               name="purchase_cost"
               type="number"
-              step="0.01"
               min="0"
+              step="0.01"
               required
               defaultValue={
                 product?.purchase_cost ?? 0
               }
-              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none focus:border-sky-500"
             />
-
-            <p className="mt-1 text-xs text-neutral-500">
-              Admin only
-            </p>
           </div>
 
-          {/* Regular Price */}
-
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="regular_price"
+              className="mb-2 block text-sm font-medium"
+            >
               Regular Price
             </label>
 
             <input
+              id="regular_price"
               name="regular_price"
               type="number"
-              step="0.01"
               min="0"
+              step="0.01"
               required
               defaultValue={
                 product?.regular_price ?? ""
               }
-              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none focus:border-sky-500"
             />
           </div>
 
-          {/* Sale Price */}
-
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="sale_price"
+              className="mb-2 block text-sm font-medium"
+            >
               Sale Price
             </label>
 
             <input
+              id="sale_price"
               name="sale_price"
               type="number"
-              step="0.01"
               min="0"
+              step="0.01"
               defaultValue={
                 product?.sale_price ?? ""
               }
-              placeholder="Optional"
-              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none focus:border-sky-500"
             />
           </div>
         </div>
@@ -275,26 +375,29 @@ export function ProductForm({
 
       {/* Inventory */}
 
-      <section className="space-y-6 border-t pt-8">
-        <div>
+      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div className="mb-6">
           <h2 className="text-lg font-semibold">
             Inventory
           </h2>
 
           <p className="mt-1 text-sm text-neutral-500">
-            Manage product stock and low-stock threshold.
+            Configure stock quantity and
+            low-stock warning.
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
-          {/* Stock */}
-
+        <div className="grid gap-6 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="stock_quantity"
+              className="mb-2 block text-sm font-medium"
+            >
               Stock Quantity
             </label>
 
             <input
+              id="stock_quantity"
               name="stock_quantity"
               type="number"
               min="0"
@@ -302,47 +405,51 @@ export function ProductForm({
               defaultValue={
                 product?.stock_quantity ?? 0
               }
-              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none focus:border-sky-500"
             />
           </div>
 
-          {/* Low Stock */}
-
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="low_stock_threshold"
+              className="mb-2 block text-sm font-medium"
+            >
               Low Stock Threshold
             </label>
 
             <input
+              id="low_stock_threshold"
               name="low_stock_threshold"
               type="number"
               min="0"
               required
               defaultValue={
-                product?.low_stock_threshold ?? 10
+                product?.low_stock_threshold ??
+                10
               }
-              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none focus:border-sky-500"
             />
           </div>
         </div>
       </section>
 
-      {/* Product Settings */}
+      {/* Settings */}
 
-      <section className="space-y-6 border-t pt-8">
-        <div>
+      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div className="mb-6">
           <h2 className="text-lg font-semibold">
             Product Settings
           </h2>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:gap-8">
-          <label className="flex items-center gap-3">
+        <div className="space-y-4">
+          <label className="flex cursor-pointer items-center gap-3">
             <input
-              name="is_featured"
               type="checkbox"
+              name="is_featured"
               defaultChecked={
-                product?.is_featured ?? false
+                product?.is_featured ??
+                false
               }
               className="h-4 w-4 rounded border-neutral-300"
             />
@@ -352,12 +459,13 @@ export function ProductForm({
             </span>
           </label>
 
-          <label className="flex items-center gap-3">
+          <label className="flex cursor-pointer items-center gap-3">
             <input
-              name="is_active"
               type="checkbox"
+              name="is_active"
               defaultChecked={
-                product?.is_active ?? true
+                product?.is_active ??
+                true
               }
               className="h-4 w-4 rounded border-neutral-300"
             />
@@ -371,57 +479,95 @@ export function ProductForm({
 
       {/* SEO */}
 
-      <section className="space-y-6 border-t pt-8">
-        <div>
+      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div className="mb-6">
           <h2 className="text-lg font-semibold">
-            SEO Information
+            SEO
           </h2>
 
           <p className="mt-1 text-sm text-neutral-500">
-            Optional information for search engine
-            optimization.
+            Optional search engine metadata.
           </p>
         </div>
 
-        {/* SEO Title */}
+        <div className="space-y-6">
+          <div>
+            <label
+              htmlFor="seo_title"
+              className="mb-2 block text-sm font-medium"
+            >
+              SEO Title
+            </label>
 
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            SEO Title
-          </label>
+            <input
+              id="seo_title"
+              name="seo_title"
+              defaultValue={
+                product?.seo_title || ""
+              }
+              placeholder="SEO title"
+              className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none focus:border-sky-500"
+            />
+          </div>
 
-          <input
-            name="seo_title"
-            type="text"
-            defaultValue={product?.seo_title ?? ""}
-            placeholder="SEO title"
-            className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-          />
-        </div>
+          <div>
+            <label
+              htmlFor="seo_description"
+              className="mb-2 block text-sm font-medium"
+            >
+              SEO Description
+            </label>
 
-        {/* SEO Description */}
-
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            SEO Description
-          </label>
-
-          <textarea
-            name="seo_description"
-            rows={4}
-            defaultValue={
-              product?.seo_description ?? ""
-            }
-            placeholder="SEO description"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-          />
+            <textarea
+              id="seo_description"
+              name="seo_description"
+              rows={4}
+              defaultValue={
+                product?.seo_description ||
+                ""
+              }
+              placeholder="SEO description"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-3 outline-none focus:border-sky-500"
+            />
+          </div>
         </div>
       </section>
 
-      {/* Submit */}
+      {/* Error */}
 
-      <div className="flex justify-end border-t pt-6">
-        <SubmitButton isEdit={isEdit} />
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Actions */}
+
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          onClick={() =>
+            router.push(
+              "/admin/products"
+            )
+          }
+          disabled={loading}
+          className="rounded-lg border border-neutral-300 px-6 py-3 text-sm font-medium transition hover:bg-neutral-50 disabled:opacity-50"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="rounded-lg bg-sky-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading
+            ? "Saving..."
+            : isEditMode
+              ? "Save Changes"
+              : "Create Product"}
+        </button>
       </div>
     </form>
   );

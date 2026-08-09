@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 
 import { ProductForm } from "@/components/product/product-form";
 
+import { getProductById } from "@/lib/services/product.service";
 import { getActiveCategories } from "@/lib/services/category.service";
 import { getBrands } from "@/lib/services/brand.service";
-import { getProductById } from "@/lib/services/product.service";
 
 export default async function EditProductPage({
   params,
@@ -13,17 +13,16 @@ export default async function EditProductPage({
 }) {
   const { id } = await params;
 
-  const product = await getProductById(id);
+  const [product, categories, brands] =
+    await Promise.all([
+      getProductById(id),
+      getActiveCategories(),
+      getBrands(),
+    ]);
 
   if (!product) {
     notFound();
   }
-
-  const [categories, brands] =
-    await Promise.all([
-      getActiveCategories(),
-      getBrands(),
-    ]);
 
   return (
     <div className="space-y-8">
@@ -33,7 +32,8 @@ export default async function EditProductPage({
         </h1>
 
         <p className="mt-2 text-neutral-500">
-          Update product information.
+          Update product information and
+          inventory settings.
         </p>
       </div>
 

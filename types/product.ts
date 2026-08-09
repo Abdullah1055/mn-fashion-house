@@ -31,6 +31,8 @@ export interface Product {
 
   seo_description: string | null;
 
+  brand_id: string | null;
+
   created_at: string;
 
   updated_at: string;

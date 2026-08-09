@@ -3,6 +3,12 @@ import { z } from "zod";
 export const productSchema = z.object({
   category_id: z.string().uuid(),
 
+  brand_id: z
+    .string()
+    .uuid()
+    .nullable()
+    .optional(),
+
   name: z
     .string()
     .trim()

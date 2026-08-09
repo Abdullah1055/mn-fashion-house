@@ -6,7 +6,17 @@ export async function getProducts(): Promise<Product[]> {
 
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select(`
+      *,
+      category:categories(
+        id,
+        name
+      ),
+      brand:brands(
+        id,
+        name
+      )
+    `)
     .order("created_at", {
       ascending: false,
     });
@@ -25,7 +35,17 @@ export async function getProductById(
 
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select(`
+      *,
+      category:categories(
+        id,
+        name
+      ),
+      brand:brands(
+        id,
+        name
+      )
+    `)
     .eq("id", id)
     .single();
 

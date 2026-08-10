@@ -1,31 +1,72 @@
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+
 type CategoryCardProps = {
   title: string;
   description: string;
+};
+
+const CATEGORY_IMAGES: Record<
+  string,
+  string
+> = {
+  Men: "/images/categories/men.jpg",
+  Women: "/images/categories/women.jpg",
+  Kids: "/images/categories/kids.jpg",
+  Accessories:
+    "/images/categories/accessories.jpg",
 };
 
 export function CategoryCard({
   title,
   description,
 }: CategoryCardProps) {
+  const image =
+    CATEGORY_IMAGES[title] ??
+    "/images/categories/default.jpg";
+
   return (
-    <div className="group cursor-pointer rounded-3xl border border-neutral-200 bg-white p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+    <Link
+      href={`/products?category=${encodeURIComponent(
+        title
+      )}`}
+      className="group block"
+    >
+      <article className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+        {/* Image */}
+        <div className="relative aspect-[4/4.5] overflow-hidden bg-sky-50">
+          <img
+            src={image}
+            alt={`${title} collection`}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
 
-      <div className="mb-10 flex h-40 items-center justify-center rounded-2xl bg-neutral-100">
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent opacity-70" />
 
-        <span className="text-sm uppercase tracking-[0.25em] text-neutral-400">
-          Image
-        </span>
+          {/* Arrow */}
+          <div className="absolute bottom-5 right-5 flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-900 shadow-md transition duration-300 group-hover:bg-red-600 group-hover:text-white">
+            <ArrowUpRight
+              size={19}
+            />
+          </div>
+        </div>
 
-      </div>
+        {/* Content */}
+        <div className="p-5">
+          <h3 className="text-xl font-bold text-slate-950">
+            {title}
+          </h3>
 
-      <h3 className="text-2xl font-semibold">
-        {title}
-      </h3>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            {description}
+          </p>
 
-      <p className="mt-3 text-neutral-500">
-        {description}
-      </p>
-
-    </div>
+          <span className="mt-4 inline-block text-xs font-bold uppercase tracking-[0.16em] text-red-600">
+            Shop Collection
+          </span>
+        </div>
+      </article>
+    </Link>
   );
 }

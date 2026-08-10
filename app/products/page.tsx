@@ -1,4 +1,4 @@
-import { ProductCard } from "@/components/shop/product-card";
+import { ProductCatalog } from "@/components/shop/product-catalog";
 
 import { getCatalogProducts } from "@/lib/services/catalog.service";
 
@@ -9,9 +9,9 @@ export default async function ProductsPage() {
   return (
     <main className="min-h-screen bg-neutral-50">
       <section className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">
+        <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-500">
               MN Fashion House
             </p>
 
@@ -36,38 +36,14 @@ export default async function ProductsPage() {
             </h2>
 
             <p className="mt-2 text-sm text-neutral-500">
-              Please check back soon for our
-              latest collection.
+              Please check back soon for
+              our latest collection.
             </p>
           </div>
         ) : (
-          <>
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-neutral-900">
-                  All Products
-                </h2>
-
-                <p className="mt-1 text-sm text-neutral-500">
-                  {products.length}{" "}
-                  {products.length === 1
-                    ? "product"
-                    : "products"}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {products.map(
-                (product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                  />
-                )
-              )}
-            </div>
-          </>
+          <ProductCatalog
+            products={products}
+          />
         )}
       </section>
     </main>

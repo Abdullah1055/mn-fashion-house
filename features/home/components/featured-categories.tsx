@@ -5,7 +5,7 @@ import { FEATURED_CATEGORIES } from "../data/categories";
 
 export function FeaturedCategories() {
   return (
-    <Section className="bg-white">
+    <Section>
       <div className="text-center">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-600">
           Categories
@@ -22,17 +22,13 @@ export function FeaturedCategories() {
       </div>
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {FEATURED_CATEGORIES.map(
-          (category) => (
-            <CategoryCard
-              key={category.id}
-              title={category.title}
-              description={
-                category.description
-              }
-            />
-          )
-        )}
+        {FEATURED_CATEGORIES.map((category) => (
+          <CategoryCard
+            key={category.id}
+            title={category.title}
+            description={category.description}
+          />
+        ))}
       </div>
     </Section>
   );

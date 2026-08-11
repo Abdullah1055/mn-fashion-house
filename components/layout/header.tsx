@@ -8,7 +8,7 @@ import {
 
 import { Container } from "@/components/common/container";
 import { useCart } from "@/components/cart/cart-provider";
-
+import { Logo } from "@/components/shared/logo";
 import { MAIN_NAVIGATION } from "@/config/navigation";
 
 export function Header() {
@@ -24,26 +24,22 @@ export function Header() {
             className="shrink-0"
             aria-label="MN Fashion House Home"
           >
-            <span className="text-xl font-extrabold uppercase tracking-tight text-red-600 sm:text-2xl">
-              MN FASHION HOUSE
-            </span>
+            <Logo />
           </Link>
 
           {/* Navigation */}
           <nav className="hidden items-center gap-7 md:flex">
-            {MAIN_NAVIGATION.map(
-              (item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="group relative py-7 text-sm font-semibold uppercase text-slate-700 transition hover:text-red-600"
-                >
-                  {item.title}
+            {MAIN_NAVIGATION.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group relative py-7 text-sm font-semibold uppercase text-slate-600 transition hover:text-red-600"
+              >
+                {item.title}
 
-                  <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-red-600 transition-all duration-200 group-hover:w-full" />
-                </Link>
-              )
-            )}
+                <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-red-600 transition-all duration-200 group-hover:w-full" />
+              </Link>
+            ))}
           </nav>
 
           {/* Actions */}
@@ -61,15 +57,13 @@ export function Header() {
             <Link
               href="/cart"
               aria-label={`Shopping cart with ${itemCount} items`}
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition hover:bg-red-50 hover:text-red-600"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50"
             >
               <ShoppingBag size={20} />
 
               {itemCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                  {itemCount > 99
-                    ? "99+"
-                    : itemCount}
+                  {itemCount > 99 ? "99+" : itemCount}
                 </span>
               )}
             </Link>

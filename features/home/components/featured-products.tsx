@@ -23,7 +23,7 @@ export async function FeaturedProducts() {
       : products.slice(0, 4);
 
   return (
-    <Section className="bg-sky-50/50">
+    <Section>
       <div className="flex flex-col items-center justify-between gap-5 text-center sm:flex-row sm:items-end sm:text-left">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-600">

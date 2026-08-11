@@ -11,6 +11,13 @@ import {
 
 import { Container } from "@/components/common/container";
 
+const CATEGORIES = [
+  "Men",
+  "Women",
+  "Kids",
+  "Accessories",
+];
+
 export function Hero() {
   return (
     <section className="overflow-hidden bg-sky-50">
@@ -57,16 +64,42 @@ export function Hero() {
             </div>
 
             {/* Search */}
-            <div className="mt-7 max-w-2xl rounded-xl border border-white bg-white p-2 shadow-lg shadow-slate-200/50">
+            <form
+              action="/products"
+              method="GET"
+              className="mt-7 max-w-2xl rounded-xl border border-white bg-white p-2 shadow-lg shadow-slate-200/50"
+            >
               <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  className="flex h-11 items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-800 sm:w-40"
-                >
-                  <span>All Categories</span>
-                  <ChevronDown size={16} />
-                </button>
+                {/* Category */}
+                <div className="relative sm:w-44">
+                  <select
+                    name="category"
+                    defaultValue=""
+                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-800 outline-none transition focus:border-red-300 focus:ring-2 focus:ring-red-100"
+                  >
+                    <option value="">
+                      All Categories
+                    </option>
 
+                    {CATEGORIES.map(
+                      (category) => (
+                        <option
+                          key={category}
+                          value={category}
+                        >
+                          {category}
+                        </option>
+                      )
+                    )}
+                  </select>
+
+                  <ChevronDown
+                    size={16}
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                  />
+                </div>
+
+                {/* Search Input */}
                 <div className="flex h-11 flex-1 items-center gap-3 rounded-lg px-3">
                   <Search
                     size={18}
@@ -75,20 +108,22 @@ export function Hero() {
 
                   <input
                     type="search"
+                    name="search"
                     placeholder="Search for products, categories..."
                     className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
                   />
                 </div>
 
-                <Link
-                  href="/products"
-                  className="flex h-11 items-center justify-center rounded-lg bg-red-600 px-5 text-white transition hover:bg-red-700"
+                {/* Search Button */}
+                <button
+                  type="submit"
                   aria-label="Search products"
+                  className="flex h-11 items-center justify-center rounded-lg bg-red-600 px-5 text-white transition hover:bg-red-700"
                 >
                   <Search size={18} />
-                </Link>
+                </button>
               </div>
-            </div>
+            </form>
           </div>
 
           {/* Right Hero Visual */}
@@ -98,12 +133,10 @@ export function Hero() {
             <div className="absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-white/80 blur-3xl" />
 
             <div className="relative flex min-h-[470px] items-center justify-center overflow-hidden rounded-[40px] bg-gradient-to-br from-sky-100 via-white to-sky-200 p-8 shadow-sm sm:min-h-[560px]">
-              {/* Decorative Circle */}
               <div className="absolute right-[-5%] top-[5%] h-[90%] w-[90%] rounded-full bg-sky-200/60" />
 
               <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-sky-100/80 to-transparent" />
 
-              {/* Fashion image */}
               <img
                 src="/images/hero-fashion.jpg"
                 alt="MN Fashion House collection"

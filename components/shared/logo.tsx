@@ -17,9 +17,19 @@ export function Logo() {
         priority
       />
 
-      <span className="text-xl font-extrabold uppercase tracking-tight text-red-600 sm:text-2xl">
-        MN FASHION HOUSE
-      </span>
+      <div className="flex items-center gap-4">
+        <span className="text-xl font-black uppercase tracking-tight text-blue-600 sm:text-2xl">
+          M N
+        </span>
+
+        <span className="text-xl font-black uppercase tracking-tight text-blue-600 sm:text-2xl">
+          F A S H I O N
+        </span>
+
+        <span className="text-xl font-black uppercase tracking-tight text-blue-600 sm:text-2xl">
+          H O U S E
+        </span>
+      </div>
     </Link>
   );
 }

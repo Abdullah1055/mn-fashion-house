@@ -7,10 +7,16 @@ export function LogoutButton() {
     <form action={logout}>
       <button
         type="submit"
-        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition hover:bg-red-50 hover:text-red-600"
+        className="flex w-full items-center gap-4 rounded-xl bg-white px-5 py-4 text-left text-black transition hover:bg-red-50 hover:text-red-600"
       >
-        <LogOut size={18} />
-        <span>Logout</span>
+        <LogOut
+          size={22}
+          strokeWidth={2.5}
+        />
+
+        <span className="text-xl font-extrabold">
+          Logout
+        </span>
       </button>
     </form>
   );

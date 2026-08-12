@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Package,
   Grid3X3,
+  Tags,
   ShoppingCart,
   BadgePercent,
   Settings,
@@ -22,6 +23,11 @@ export const NAV_ITEMS = [
     title: "Categories",
     href: "/admin/categories",
     icon: Grid3X3,
+  },
+  {
+    title: "Brands",
+    href: "/admin/brands",
+    icon: Tags,
   },
   {
     title: "Orders",

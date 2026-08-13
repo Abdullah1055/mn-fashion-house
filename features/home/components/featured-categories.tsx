@@ -12,7 +12,7 @@ export function FeaturedCategories() {
           Categories
         </p>
 
-        <h2 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+        <h2 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-3xl">
           Shop By Category
         </h2>
 

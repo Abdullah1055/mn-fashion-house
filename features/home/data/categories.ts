@@ -15,7 +15,7 @@ export const FEATURED_CATEGORIES = [
     id: 3,
     title: "Kids",
     description: "Comfortable Kids Wear",
-    image: "",
+    image: "/images/categories/kids.png",
   },
   {
     id: 4,

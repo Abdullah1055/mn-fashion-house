@@ -17,14 +17,21 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-sky-100 bg-white/95 backdrop-blur">
       <Container>
-        <div className="flex h-20 items-center justify-between gap-6">
+        <div className="flex h-15 items-center justify-between gap-6">
+          
           {/* Brand */}
           <Link
             href="/"
             className="shrink-0"
             aria-label="MN Fashion House Home"
           >
-            <Logo />
+            <div className="flex flex-col">
+              <Logo />
+
+              <p className="ml-[110px] text-[11px] font-bold uppercase tracking-[0.15em] text-red-600">
+                Your Confidence, Our Commitment.
+              </p>
+            </div>
           </Link>
 
           {/* Navigation */}
@@ -44,6 +51,7 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            
             {/* Search */}
             <Link
               href="/products"
@@ -67,6 +75,7 @@ export function Header() {
                 </span>
               )}
             </Link>
+
           </div>
         </div>
       </Container>

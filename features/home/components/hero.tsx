@@ -2,10 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   Search,
-  Truck,
-  ShieldCheck,
-  Award,
-  Headphones,
   ChevronDown,
 } from "lucide-react";
 
@@ -161,73 +157,6 @@ export function Hero() {
           </div>
         </div>
       </Container>
-
-      {/* =====================================================
-          SERVICE HIGHLIGHTS
-      ====================================================== */}
-      <div className="border-t border-sky-100 bg-white/90">
-        <Container>
-          <div className="grid gap-1 py-5 sm:grid-cols-2 lg:grid-cols-4">
-
-            <ServiceItem
-              icon={<Truck size={21} />}
-              title="Free Delivery"
-              description="Fast delivery at your door"
-            />
-
-            <ServiceItem
-              icon={<ShieldCheck size={21} />}
-              title="Secure Payment"
-              description="100% secure & safe"
-            />
-
-            <ServiceItem
-              icon={<Award size={21} />}
-              title="Premium Quality"
-              description="Finest fabrics & materials"
-            />
-
-            <ServiceItem
-              icon={<Headphones size={21} />}
-              title="Customer Support"
-              description="We're here to help you"
-            />
-
-          </div>
-        </Container>
-      </div>
     </section>
-  );
-}
-
-function ServiceItem({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl px-4 py-4">
-
-      {/* Icon */}
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
-        {icon}
-      </div>
-
-      {/* Text */}
-      <div>
-        <h3 className="text-sm font-bold uppercase text-slate-900">
-          {title}
-        </h3>
-
-        <p className="mt-1 text-xs text-slate-500">
-          {description}
-        </p>
-      </div>
-
-    </div>
   );
 }

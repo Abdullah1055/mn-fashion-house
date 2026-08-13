@@ -23,22 +23,32 @@ export function Hero() {
     <section className="overflow-hidden bg-sky-50">
       <Container>
         <div className="grid min-h-[680px] items-center gap-10 py-12 lg:grid-cols-[0.95fr_1.05fr] lg:py-16">
-          {/* Left Content */}
+
+          {/* =====================================================
+              LEFT CONTENT
+          ====================================================== */}
           <div className="relative z-10">
+
+            {/* Collection Badge */}
             <div className="inline-flex rounded-full border border-red-200 bg-white/80 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-red-600 shadow-sm">
               New Collection 2026
             </div>
 
+            {/* Heading */}
             <h1 className="mt-7 max-w-2xl text-5xl font-bold leading-[1.05] tracking-tight text-slate-950 sm:text-6xl lg:text-[72px]">
               Style That
               <br />
+
               <span className="text-red-600">
                 Speaks Before
               </span>
+
               <br />
+
               You Do.
             </h1>
 
+            {/* Description */}
             <p className="mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
               Discover premium quality fashion curated
               for everyday elegance. Minimal design.
@@ -70,6 +80,7 @@ export function Hero() {
               className="mt-7 max-w-2xl rounded-xl border border-white bg-white p-2 shadow-lg shadow-slate-200/50"
             >
               <div className="flex flex-col gap-2 sm:flex-row">
+
                 {/* Category */}
                 <div className="relative sm:w-44">
                   <select
@@ -122,31 +133,28 @@ export function Hero() {
                 >
                   <Search size={18} />
                 </button>
+
               </div>
             </form>
           </div>
 
-          {/* Right Hero Visual */}
+          {/* =====================================================
+              RIGHT HERO VISUAL
+          ====================================================== */}
           <div className="relative">
-            <div className="absolute -right-20 -top-16 h-72 w-72 rounded-full bg-sky-200/60 blur-3xl" />
 
-            <div className="absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-white/80 blur-3xl" />
-
-            <div className="relative flex min-h-[470px] items-center justify-center overflow-hidden rounded-[40px] bg-gradient-to-br from-sky-100 via-white to-sky-200 p-8 shadow-sm sm:min-h-[560px]">
-              <div className="absolute right-[-5%] top-[5%] h-[90%] w-[90%] rounded-full bg-sky-200/60" />
-
-              <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-sky-100/80 to-transparent" />
-
+            {/* Hero Image */}
+            <div className="relative overflow-hidden rounded-[32px] shadow-sm">
               <img
-                src="/images/hero-fashion.jpg"
+                src="/images/hero-fashion.png"
                 alt="MN Fashion House collection"
-                className="relative z-10 h-full max-h-[540px] w-full object-contain object-bottom"
+                className="block h-auto w-full object-contain"
               />
             </div>
 
-            {/* Floating badge */}
-            <div className="absolute bottom-6 left-5 z-20 hidden rounded-xl border border-white bg-white/95 px-4 py-3 shadow-lg sm:block">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+            {/* Floating Badge */}
+            <div className="absolute bottom-5 left-5 z-20 rounded-xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur-sm">
+              <p className="text-xs font-medium uppercase tracking-wider text-red-900">
                 MN Fashion House
               </p>
 
@@ -154,14 +162,18 @@ export function Hero() {
                 Premium Everyday Fashion
               </p>
             </div>
+
           </div>
         </div>
       </Container>
 
-      {/* Service Highlights */}
+      {/* =====================================================
+          SERVICE HIGHLIGHTS
+      ====================================================== */}
       <div className="border-t border-sky-100 bg-white/90">
         <Container>
           <div className="grid gap-1 py-5 sm:grid-cols-2 lg:grid-cols-4">
+
             <ServiceItem
               icon={<Truck size={21} />}
               title="Free Delivery"
@@ -185,6 +197,7 @@ export function Hero() {
               title="Customer Support"
               description="We're here to help you"
             />
+
           </div>
         </Container>
       </div>
@@ -203,10 +216,13 @@ function ServiceItem({
 }) {
   return (
     <div className="flex items-center gap-4 rounded-xl px-4 py-4">
+
+      {/* Icon */}
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
         {icon}
       </div>
 
+      {/* Text */}
       <div>
         <h3 className="text-sm font-bold uppercase text-slate-900">
           {title}
@@ -216,6 +232,7 @@ function ServiceItem({
           {description}
         </p>
       </div>
+
     </div>
   );
 }

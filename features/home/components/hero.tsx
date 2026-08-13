@@ -20,22 +20,17 @@ const CATEGORIES = [
 
 export function Hero() {
   return (
-    <section className="overflow-hidden bg-sky-50">
+    <section className="overflow-hidden bg-sky-200">
       <Container>
-        <div className="grid min-h-[680px] items-center gap-10 py-12 lg:grid-cols-[0.95fr_1.05fr] lg:py-16">
+        <div className="grid min-h-[260px] items-center gap-2 py-4 lg:grid-cols-[0.95fr_1.05fr] lg:py-4">
 
           {/* =====================================================
               LEFT CONTENT
           ====================================================== */}
           <div className="relative z-10">
 
-            {/* Collection Badge */}
-            <div className="inline-flex rounded-full border border-red-200 bg-white/80 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-red-600 shadow-sm">
-              New Collection 2026
-            </div>
-
             {/* Heading */}
-            <h1 className="mt-7 max-w-2xl text-5xl font-bold leading-[1.05] tracking-tight text-slate-950 sm:text-6xl lg:text-[72px]">
+            <h1 className="mt-2 max-w-2xl text-2xl font-bold leading-[1.1] tracking-tight text-slate-950 sm:text-3xl lg:text-[50px]">
               Style That
               <br />
 
@@ -49,14 +44,14 @@ export function Hero() {
             </h1>
 
             {/* Description */}
-            <p className="mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+            <p className="mt-2 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
               Discover premium quality fashion curated
               for everyday elegance. Minimal design.
               Maximum confidence.
             </p>
 
             {/* CTA */}
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-2 flex flex-wrap gap-3">
               <Link
                 href="/products"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-red-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
@@ -144,7 +139,7 @@ export function Hero() {
           <div className="relative">
 
             {/* Hero Image */}
-            <div className="relative overflow-hidden rounded-[32px] shadow-sm">
+            <div className="relative overflow-hidden rounded-[32px] shadow-sm lg:w-[calc(100%+50px)]">
               <img
                 src="/images/hero-fashion.png"
                 alt="MN Fashion House collection"

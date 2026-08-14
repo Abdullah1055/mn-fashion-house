@@ -1,3 +1,13 @@
+export interface ProductCategory {
+  id: string;
+  name: string;
+}
+
+export interface ProductBrand {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
 
@@ -36,6 +46,10 @@ export interface Product {
   seo_description: string | null;
 
   brand_id: string | null;
+
+  category?: ProductCategory | null;
+
+  brand?: ProductBrand | null;
 
   created_at: string;
 

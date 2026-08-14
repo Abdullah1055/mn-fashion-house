@@ -8,6 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import type {
+  OrderSource,
   OrderStatus,
   PaymentStatus,
 } from "@/types/order";
@@ -18,6 +19,7 @@ type SearchParams = {
   search?: string;
   status?: string;
   payment?: string;
+  source?: string;
   page?: string;
 };
 
@@ -81,6 +83,28 @@ function getOrderBadge(
   }
 }
 
+function getSourceBadge(
+  source: OrderSource
+) {
+  if (source === "store") {
+    return "bg-amber-100 text-amber-700";
+  }
+
+  return "bg-sky-100 text-sky-700";
+}
+
+function getOrderTotal(order: {
+  subtotal: number;
+  discount_amount: number;
+  delivery_charge: number;
+}) {
+  return (
+    Number(order.subtotal || 0) -
+    Number(order.discount_amount || 0) +
+    Number(order.delivery_charge || 0)
+  );
+}
+
 function buildPageUrl(
   params: SearchParams,
   page: number
@@ -97,6 +121,10 @@ function buildPageUrl(
 
   if (params.payment) {
     query.set("payment", params.payment);
+  }
+
+  if (params.source) {
+    query.set("source", params.source);
   }
 
   query.set("page", String(page));
@@ -122,6 +150,9 @@ export default async function OrdersPage({
   const payment =
     params.payment || "";
 
+  const source =
+    params.source || "";
+
   const requestedPage = Number(
     params.page || "1"
   );
@@ -133,27 +164,47 @@ export default async function OrdersPage({
       : 1;
 
   /*
-   * Main Orders Query
+   * =====================================================
+   * MAIN ORDERS QUERY
+   * =====================================================
    */
 
   let query = supabase
     .from("orders")
-    .select("*", {
-      count: "exact",
-    })
+    .select(
+      `
+        id,
+        order_number,
+        customer_name,
+        customer_phone,
+        subtotal,
+        discount_amount,
+        delivery_charge,
+        payment_status,
+        order_status,
+        order_source,
+        created_at
+      `,
+      {
+        count: "exact",
+      }
+    )
     .order("created_at", {
       ascending: false,
     });
 
   /*
-   * Search
+   * =====================================================
+   * SEARCH
+   * =====================================================
    */
 
   if (search) {
-    const escapedSearch = search.replace(
-      /[%_]/g,
-      "\\$&"
-    );
+    const escapedSearch =
+      search.replace(
+        /[%_]/g,
+        "\\$&"
+      );
 
     query = query.or(
       `order_number.ilike.%${escapedSearch}%,customer_name.ilike.%${escapedSearch}%,customer_phone.ilike.%${escapedSearch}%`
@@ -161,7 +212,9 @@ export default async function OrdersPage({
   }
 
   /*
-   * Order Status Filter
+   * =====================================================
+   * ORDER STATUS FILTER
+   * =====================================================
    */
 
   if (status) {
@@ -172,7 +225,9 @@ export default async function OrdersPage({
   }
 
   /*
-   * Payment Status Filter
+   * =====================================================
+   * PAYMENT STATUS FILTER
+   * =====================================================
    */
 
   if (payment) {
@@ -183,11 +238,30 @@ export default async function OrdersPage({
   }
 
   /*
-   * Pagination
+   * =====================================================
+   * ORDER SOURCE FILTER
+   * =====================================================
+   */
+
+  if (
+    source === "online" ||
+    source === "store"
+  ) {
+    query = query.eq(
+      "order_source",
+      source
+    );
+  }
+
+  /*
+   * =====================================================
+   * PAGINATION
+   * =====================================================
    */
 
   const from =
-    (currentPage - 1) * PAGE_SIZE;
+    (currentPage - 1) *
+    PAGE_SIZE;
 
   const to =
     from + PAGE_SIZE - 1;
@@ -196,13 +270,17 @@ export default async function OrdersPage({
     data: orders,
     error,
     count,
-  } = await query.range(from, to);
+  } = await query.range(
+    from,
+    to
+  );
 
   if (error) {
     throw error;
   }
 
-  const totalOrders = count ?? 0;
+  const totalOrders =
+    count ?? 0;
 
   const totalPages =
     Math.ceil(
@@ -210,24 +288,26 @@ export default async function OrdersPage({
     );
 
   /*
-   * Summary statistics
-   *
-   * These are calculated from the
-   * current filtered result set.
+   * =====================================================
+   * SUMMARY
+   * =====================================================
    */
 
-  const filteredOrders = orders ?? [];
+  const filteredOrders =
+    orders ?? [];
 
   const pendingOrders =
     filteredOrders.filter(
       (order) =>
-        order.order_status === "pending"
+        order.order_status ===
+        "pending"
     ).length;
 
   const completedOrders =
     filteredOrders.filter(
       (order) =>
-        order.order_status === "delivered"
+        order.order_status ===
+        "delivered"
     ).length;
 
   const totalSales =
@@ -240,13 +320,15 @@ export default async function OrdersPage({
       .reduce(
         (total, order) =>
           total +
-          Number(order.total_amount),
+          getOrderTotal(order),
         0
       );
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* =====================================================
+          HEADER
+      ====================================================== */}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -280,7 +362,9 @@ export default async function OrdersPage({
         </div>
       </div>
 
-      {/* Summary */}
+      {/* =====================================================
+          SUMMARY
+      ====================================================== */}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -324,19 +408,25 @@ export default async function OrdersPage({
         </div>
       </div>
 
-      {/* Filters */}
+      {/* =====================================================
+          FILTERS
+      ====================================================== */}
 
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <form
           method="GET"
-          className="grid gap-4 md:grid-cols-[1fr_180px_180px_auto_auto]"
+          className="grid gap-4 md:grid-cols-[1fr_180px_180px_180px_auto_auto]"
         >
+          {/* Search */}
+
           <input
             name="search"
             defaultValue={search}
             placeholder="Search order, customer or phone..."
             className="h-11 rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           />
+
+          {/* Order Status */}
 
           <select
             name="status"
@@ -372,6 +462,8 @@ export default async function OrdersPage({
             </option>
           </select>
 
+          {/* Payment */}
+
           <select
             name="payment"
             defaultValue={payment}
@@ -398,12 +490,36 @@ export default async function OrdersPage({
             </option>
           </select>
 
+          {/* Source */}
+
+          <select
+            name="source"
+            defaultValue={source}
+            className="h-11 rounded-lg border border-neutral-300 px-3 outline-none focus:border-sky-500"
+          >
+            <option value="">
+              All Sources
+            </option>
+
+            <option value="online">
+              Online Order
+            </option>
+
+            <option value="store">
+              Store Sale
+            </option>
+          </select>
+
+          {/* Filter */}
+
           <button
             type="submit"
             className="h-11 rounded-lg bg-sky-600 px-5 font-medium text-white transition hover:bg-sky-700"
           >
             Filter
           </button>
+
+          {/* Clear */}
 
           <Link
             href="/admin/orders"
@@ -414,9 +530,14 @@ export default async function OrdersPage({
         </form>
       </div>
 
-      {/* Active Filters */}
+      {/* =====================================================
+          ACTIVE FILTERS
+      ====================================================== */}
 
-      {(search || status || payment) && (
+      {(search ||
+        status ||
+        payment ||
+        source) && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-neutral-500">
             Active filters:
@@ -439,10 +560,22 @@ export default async function OrdersPage({
               Payment: {payment}
             </span>
           )}
+
+          {source && (
+            <span className="rounded-full bg-neutral-100 px-3 py-1">
+              Source:{" "}
+              {source ===
+              "store"
+                ? "Store Sale"
+                : "Online Order"}
+            </span>
+          )}
         </div>
       )}
 
-      {/* Orders Table */}
+      {/* =====================================================
+          ORDERS TABLE
+      ====================================================== */}
 
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
         <div className="border-b px-6 py-5">
@@ -452,7 +585,7 @@ export default async function OrdersPage({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[1000px]">
             <thead className="bg-neutral-100">
               <tr>
                 <th className="px-6 py-4 text-left">
@@ -461,6 +594,10 @@ export default async function OrdersPage({
 
                 <th className="px-6 py-4 text-left">
                   Customer
+                </th>
+
+                <th className="px-6 py-4 text-center">
+                  Source
                 </th>
 
                 <th className="px-6 py-4 text-left">
@@ -487,85 +624,129 @@ export default async function OrdersPage({
 
             <tbody>
               {filteredOrders.map(
-                (order) => (
-                  <tr
-                    key={order.id}
-                    className="border-t transition hover:bg-neutral-50"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="font-semibold">
-                        #{order.order_number}
-                      </div>
-                    </td>
+                (order) => {
+                  const orderSource =
+                    (order.order_source ||
+                      "online") as OrderSource;
 
-                    <td className="px-6 py-4">
-                      <div className="font-medium">
-                        {order.customer_name}
-                      </div>
+                  return (
+                    <tr
+                      key={order.id}
+                      className="border-t transition hover:bg-neutral-50"
+                    >
+                      {/* Order */}
 
-                      <div className="mt-1 text-xs text-neutral-500">
-                        {order.customer_phone}
-                      </div>
-                    </td>
+                      <td className="px-6 py-4">
+                        <div className="font-semibold">
+                          #
+                          {
+                            order.order_number
+                          }
+                        </div>
+                      </td>
 
-                    <td className="px-6 py-4 text-sm text-neutral-600">
-                      {formatDate(
-                        order.created_at
-                      )}
-                    </td>
+                      {/* Customer */}
 
-                    <td className="px-6 py-4 text-right font-semibold">
-                      {formatCurrency(
-                        Number(
-                          order.total_amount
-                        )
-                      )}
-                    </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium">
+                          {
+                            order.customer_name
+                          }
+                        </div>
 
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${getPaymentBadge(
-                          order.payment_status
-                        )}`}
-                      >
-                        {order.payment_status.replace(
-                          "_",
-                          " "
+                        <div className="mt-1 text-xs text-neutral-500">
+                          {
+                            order.customer_phone
+                          }
+                        </div>
+                      </td>
+
+                      {/* Source */}
+
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getSourceBadge(
+                            orderSource
+                          )}`}
+                        >
+                          {orderSource ===
+                          "store"
+                            ? "Store Sale"
+                            : "Online"}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+
+                      <td className="px-6 py-4 text-sm text-neutral-600">
+                        {formatDate(
+                          order.created_at
                         )}
-                      </span>
-                    </td>
+                      </td>
 
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${getOrderBadge(
-                          order.order_status
-                        )}`}
-                      >
-                        {order.order_status}
-                      </span>
-                    </td>
+                      {/* Total */}
 
-                    <td className="px-6 py-4 text-center">
-                      <Link
-                        href={`/admin/orders/${order.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-neutral-50"
-                      >
-                        View
+                      <td className="px-6 py-4 text-right font-semibold">
+                        {formatCurrency(
+                          getOrderTotal(
+                            order
+                          )
+                        )}
+                      </td>
 
-                        <ArrowRight
-                          size={15}
-                        />
-                      </Link>
-                    </td>
-                  </tr>
-                )
+                      {/* Payment */}
+
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${getPaymentBadge(
+                            order.payment_status
+                          )}`}
+                        >
+                          {order.payment_status.replace(
+                            "_",
+                            " "
+                          )}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${getOrderBadge(
+                            order.order_status
+                          )}`}
+                        >
+                          {
+                            order.order_status
+                          }
+                        </span>
+                      </td>
+
+                      {/* Action */}
+
+                      <td className="px-6 py-4 text-center">
+                        <Link
+                          href={`/admin/orders/${order.id}`}
+                          className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-neutral-50"
+                        >
+                          View
+
+                          <ArrowRight
+                            size={15}
+                          />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                }
               )}
 
               {filteredOrders.length ===
                 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-6 py-16 text-center"
                   >
                     <p className="font-medium text-neutral-700">
@@ -583,7 +764,9 @@ export default async function OrdersPage({
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* =====================================================
+            PAGINATION
+        ====================================================== */}
 
         {totalPages > 1 && (
           <div className="flex flex-col gap-4 border-t px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
@@ -624,7 +807,8 @@ export default async function OrdersPage({
               )}
 
               <span className="rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium">
-                {currentPage} / {totalPages}
+                {currentPage} /{" "}
+                {totalPages}
               </span>
 
               {currentPage <

@@ -14,8 +14,13 @@ type ProductOption = {
   id: string;
   name: string;
   sku: string | null;
+
+  color: string | null;
+  size: string | null;
+
   regular_price: number;
   sale_price: number | null;
+
   stock_quantity: number;
 };
 
@@ -23,10 +28,17 @@ type Props = {
   products: ProductOption[];
 };
 
+type OrderSource =
+  | "online"
+  | "store";
+
 export function OrderForm({
   products,
 }: Props) {
   const router = useRouter();
+
+  const [orderSource, setOrderSource] =
+    useState<OrderSource>("online");
 
   const [items, setItems] = useState<
     CreateOrderItemInput[]
@@ -37,6 +49,9 @@ export function OrderForm({
 
   const [shipping, setShipping] =
     useState("0");
+
+  const [paymentMethod, setPaymentMethod] =
+    useState("cash_on_delivery");
 
   const [loading, setLoading] =
     useState(false);
@@ -56,17 +71,23 @@ export function OrderForm({
     (total, item) => {
       const product = products.find(
         (product) =>
-          product.id === item.product_id
+          product.id ===
+          item.product_id
       );
 
-      if (!product) return total;
+      if (!product) {
+        return total;
+      }
 
       const price = Number(
         product.sale_price ??
           product.regular_price
       );
 
-      return total + price * item.quantity;
+      return (
+        total +
+        price * item.quantity
+      );
     },
     0
   );
@@ -75,12 +96,27 @@ export function OrderForm({
     Number(discount) || 0;
 
   const shippingValue =
-    Number(shipping) || 0;
+    orderSource === "store"
+      ? 0
+      : Number(shipping) || 0;
 
   const grandTotal =
     subtotal -
     discountValue +
     shippingValue;
+
+  function handleOrderSourceChange(
+    source: OrderSource
+  ) {
+    setOrderSource(source);
+
+    if (source === "store") {
+      setShipping("0");
+      setPaymentMethod(
+        "cash_on_delivery"
+      );
+    }
+  }
 
   function handleItemsChange(
     newItems: {
@@ -92,8 +128,10 @@ export function OrderForm({
 
     setItems(
       newItems.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
+        product_id:
+          item.product_id,
+        quantity:
+          item.quantity,
       }))
     );
   }
@@ -105,14 +143,18 @@ export function OrderForm({
 
     setError(null);
 
-    if (selectedItems.length === 0) {
+    if (
+      selectedItems.length === 0
+    ) {
       setError(
         "Please add at least one product."
       );
       return;
     }
 
-    if (discountValue > subtotal) {
+    if (
+      discountValue > subtotal
+    ) {
       setError(
         "Discount cannot be greater than subtotal."
       );
@@ -122,14 +164,38 @@ export function OrderForm({
     try {
       setLoading(true);
 
-      const formData = new FormData(
-        event.currentTarget
+      const formData =
+        new FormData(
+          event.currentTarget
+        );
+
+      formData.set(
+        "order_source",
+        orderSource
       );
 
-      const result = await createOrder(
-        formData,
-        items
+      formData.set(
+        "payment_method",
+        paymentMethod
       );
+
+      if (orderSource === "store") {
+        formData.set(
+          "customer_name",
+          "Walk-in Customer"
+        );
+
+        formData.set(
+          "shipping_amount",
+          "0"
+        );
+      }
+
+      const result =
+        await createOrder(
+          formData,
+          items
+        );
 
       if (!result.success) {
         setError(
@@ -158,7 +224,103 @@ export function OrderForm({
       onSubmit={handleSubmit}
       className="space-y-8"
     >
-      {/* Customer */}
+      {/* =====================================================
+          ORDER TYPE
+      ====================================================== */}
+
+      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div>
+          <h2 className="text-lg font-semibold">
+            Order Type
+          </h2>
+
+          <p className="mt-1 text-sm text-neutral-500">
+            Select how this order was created.
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          {/* Online */}
+
+          <label
+            className={`cursor-pointer rounded-xl border p-4 transition ${
+              orderSource === "online"
+                ? "border-sky-500 bg-sky-50"
+                : "border-neutral-200 hover:bg-neutral-50"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <input
+                type="radio"
+                name="order_source_display"
+                value="online"
+                checked={
+                  orderSource ===
+                  "online"
+                }
+                onChange={() =>
+                  handleOrderSourceChange(
+                    "online"
+                  )
+                }
+                className="mt-1 h-4 w-4"
+              />
+
+              <div>
+                <p className="font-semibold text-neutral-900">
+                  Online Order
+                </p>
+
+                <p className="mt-1 text-sm text-neutral-500">
+                  Order placed for online delivery.
+                </p>
+              </div>
+            </div>
+          </label>
+
+          {/* Store */}
+
+          <label
+            className={`cursor-pointer rounded-xl border p-4 transition ${
+              orderSource === "store"
+                ? "border-sky-500 bg-sky-50"
+                : "border-neutral-200 hover:bg-neutral-50"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <input
+                type="radio"
+                name="order_source_display"
+                value="store"
+                checked={
+                  orderSource ===
+                  "store"
+                }
+                onChange={() =>
+                  handleOrderSourceChange(
+                    "store"
+                  )
+                }
+                className="mt-1 h-4 w-4"
+              />
+
+              <div>
+                <p className="font-semibold text-neutral-900">
+                  Store Sale
+                </p>
+
+                <p className="mt-1 text-sm text-neutral-500">
+                  Sale made directly at the showroom.
+                </p>
+              </div>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      {/* =====================================================
+          CUSTOMER
+      ====================================================== */}
 
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
@@ -166,57 +328,101 @@ export function OrderForm({
         </h2>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
+          {/* Customer Name */}
+
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="customer_name"
+              className="mb-2 block text-sm font-medium"
+            >
               Customer Name
             </label>
 
             <input
+              id="customer_name"
               name="customer_name"
               required
+              defaultValue={
+                orderSource ===
+                "store"
+                  ? "Walk-in Customer"
+                  : ""
+              }
+              key={orderSource}
               className="h-11 w-full rounded-lg border px-3"
               placeholder="Customer name"
             />
           </div>
 
+          {/* Phone */}
+
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="customer_phone"
+              className="mb-2 block text-sm font-medium"
+            >
               Phone
             </label>
 
             <input
+              id="customer_phone"
               name="customer_phone"
-              required
+              required={
+                orderSource ===
+                "online"
+              }
               className="h-11 w-full rounded-lg border px-3"
               placeholder="01XXXXXXXXX"
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Email
-            </label>
+          {/* Email */}
 
-            <input
-              name="customer_email"
-              type="email"
-              className="h-11 w-full rounded-lg border px-3"
-              placeholder="customer@example.com"
-            />
-          </div>
+          {orderSource ===
+            "online" && (
+            <div>
+              <label
+                htmlFor="customer_email"
+                className="mb-2 block text-sm font-medium"
+              >
+                Email
+              </label>
+
+              <input
+                id="customer_email"
+                name="customer_email"
+                type="email"
+                className="h-11 w-full rounded-lg border px-3"
+                placeholder="customer@example.com"
+              />
+            </div>
+          )}
+
+          {/* Payment */}
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="payment_method"
+              className="mb-2 block text-sm font-medium"
+            >
               Payment Method
             </label>
 
             <select
+              id="payment_method"
               name="payment_method"
-              defaultValue="cash_on_delivery"
+              value={
+                paymentMethod
+              }
+              onChange={(event) =>
+                setPaymentMethod(
+                  event.target.value
+                )
+              }
               className="h-11 w-full rounded-lg border px-3"
             >
               <option value="cash_on_delivery">
-                Cash on Delivery
+                Cash
               </option>
 
               <option value="online">
@@ -229,80 +435,142 @@ export function OrderForm({
             </select>
           </div>
 
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium">
-              Shipping Address
-            </label>
+          {/* Shipping Address */}
 
-            <textarea
-              name="shipping_address"
-              rows={3}
-              className="w-full rounded-lg border px-3 py-3"
-              placeholder="Full delivery address"
+          {orderSource ===
+            "online" && (
+            <div className="md:col-span-2">
+              <label
+                htmlFor="shipping_address"
+                className="mb-2 block text-sm font-medium"
+              >
+                Shipping Address
+              </label>
+
+              <textarea
+                id="shipping_address"
+                name="shipping_address"
+                rows={3}
+                required
+                className="w-full rounded-lg border px-3 py-3"
+                placeholder="Full delivery address"
+              />
+            </div>
+          )}
+
+          {/* Hidden Store Customer Fields */}
+
+          {orderSource ===
+            "store" && (
+            <input
+              type="hidden"
+              name="customer_email"
+              value=""
             />
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Products */}
+      {/* =====================================================
+          PRODUCTS
+      ====================================================== */}
 
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
-          Order Products
+          {orderSource ===
+          "store"
+            ? "Store Sale Products"
+            : "Order Products"}
         </h2>
 
         <div className="mt-6">
           <OrderProductSelector
             products={products}
-            value={selectedItems}
-            onChange={handleItemsChange}
+            value={
+              selectedItems
+            }
+            onChange={
+              handleItemsChange
+            }
           />
         </div>
       </section>
 
-      {/* Summary */}
+      {/* =====================================================
+          SUMMARY
+      ====================================================== */}
 
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
-          Order Summary
+          Sale Summary
         </h2>
 
-        <div className="mt-6 max-w-md space-y-5 ml-auto">
+        <div className="mt-6 ml-auto max-w-md space-y-5">
+          {/* Discount */}
+
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="discount_amount"
+              className="mb-2 block text-sm font-medium"
+            >
               Discount
             </label>
 
             <input
+              id="discount_amount"
               name="discount_amount"
               type="number"
               min="0"
               step="0.01"
               value={discount}
               onChange={(event) =>
-                setDiscount(event.target.value)
+                setDiscount(
+                  event.target.value
+                )
               }
               className="h-11 w-full rounded-lg border px-3"
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Shipping
-            </label>
+          {/* Shipping */}
 
+          {orderSource ===
+            "online" && (
+            <div>
+              <label
+                htmlFor="shipping_amount"
+                className="mb-2 block text-sm font-medium"
+              >
+                Delivery Charge
+              </label>
+
+              <input
+                id="shipping_amount"
+                name="shipping_amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={shipping}
+                onChange={(event) =>
+                  setShipping(
+                    event.target.value
+                  )
+                }
+                className="h-11 w-full rounded-lg border px-3"
+              />
+            </div>
+          )}
+
+          {orderSource ===
+            "store" && (
             <input
+              type="hidden"
               name="shipping_amount"
-              type="number"
-              min="0"
-              step="0.01"
-              value={shipping}
-              onChange={(event) =>
-                setShipping(event.target.value)
-              }
-              className="h-11 w-full rounded-lg border px-3"
+              value="0"
             />
-          </div>
+          )}
+
+          {/* Totals */}
 
           <div className="border-t pt-5">
             <div className="flex justify-between text-sm">
@@ -311,7 +579,10 @@ export function OrderForm({
               </span>
 
               <span>
-                ৳{subtotal.toFixed(2)}
+                ৳
+                {subtotal.toFixed(
+                  2
+                )}
               </span>
             </div>
 
@@ -321,45 +592,74 @@ export function OrderForm({
               </span>
 
               <span>
-                - ৳{discountValue.toFixed(2)}
+                - ৳
+                {discountValue.toFixed(
+                  2
+                )}
               </span>
             </div>
 
-            <div className="mt-3 flex justify-between text-sm">
-              <span className="text-neutral-500">
-                Shipping
-              </span>
+            {orderSource ===
+              "online" && (
+              <div className="mt-3 flex justify-between text-sm">
+                <span className="text-neutral-500">
+                  Delivery
+                </span>
 
-              <span>
-                ৳{shippingValue.toFixed(2)}
-              </span>
-            </div>
+                <span>
+                  ৳
+                  {shippingValue.toFixed(
+                    2
+                  )}
+                </span>
+              </div>
+            )}
 
             <div className="mt-5 flex justify-between border-t pt-5 text-lg font-bold">
-              <span>Grand Total</span>
+              <span>
+                Grand Total
+              </span>
 
               <span>
-                ৳{grandTotal.toFixed(2)}
+                ৳
+                {grandTotal.toFixed(
+                  2
+                )}
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Notes */}
+      {/* =====================================================
+          NOTES
+      ====================================================== */}
 
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
-        <label className="mb-2 block text-sm font-medium">
+        <label
+          htmlFor="notes"
+          className="mb-2 block text-sm font-medium"
+        >
           Notes
         </label>
 
         <textarea
+          id="notes"
           name="notes"
           rows={4}
           className="w-full rounded-lg border px-3 py-3"
-          placeholder="Optional order notes"
+          placeholder={
+            orderSource ===
+            "store"
+              ? "Optional store sale notes"
+              : "Optional order notes"
+          }
         />
       </section>
+
+      {/* =====================================================
+          ERROR
+      ====================================================== */}
 
       {error && (
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -367,15 +667,22 @@ export function OrderForm({
         </div>
       )}
 
+      {/* =====================================================
+          ACTION
+      ====================================================== */}
+
       <div className="flex justify-end">
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-sky-600 px-6 py-3 font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-sky-600 px-6 py-3 font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading
-            ? "Creating Order..."
-            : "Create Order"}
+            ? "Saving..."
+            : orderSource ===
+              "store"
+              ? "Complete Store Sale"
+              : "Create Order"}
         </button>
       </div>
     </form>

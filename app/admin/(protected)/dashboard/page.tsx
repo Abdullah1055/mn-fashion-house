@@ -134,153 +134,385 @@ export default async function DashboardPage() {
           </h2>
 
           <p className="mt-1 text-sm text-neutral-500">
-            Sales and profit performance by period.
+            Sales and profit performance by period and sales channel.
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {/* Today */}
+        <div className="space-y-6">
+          {/* =================================================
+              TODAY
+          ================================================== */}
 
-          <div className="rounded-xl border bg-neutral-50 p-5">
-            <p className="text-sm font-medium text-neutral-500">
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-neutral-900">
               Today
-            </p>
+            </h3>
 
-            <div className="mt-4">
-              <p className="text-xs text-neutral-500">
-                Sales
-              </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Online */}
 
-              <p className="mt-1 text-2xl font-bold text-neutral-950">
-                {formatCurrency(
-                  stats.todaySales
-                )}
-              </p>
+              <div className="rounded-xl border bg-sky-50 p-5">
+                <p className="text-sm font-medium text-sky-700">
+                  Online Sales
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.todayOnlineSales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t border-sky-100 pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.todayOnlineProfit
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Store */}
+
+              <div className="rounded-xl border bg-amber-50 p-5">
+                <p className="text-sm font-medium text-amber-700">
+                  Store Sales
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.todayStoreSales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t border-amber-100 pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.todayStoreProfit
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Total */}
+
+              <div className="rounded-xl border bg-neutral-50 p-5">
+                <p className="text-sm font-medium text-neutral-600">
+                  Total
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.todaySales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.todayProfit
+                    )}
+                  </p>
+
+                  <p className="mt-2 text-xs text-neutral-500">
+                    {stats.todayOrders} orders
+                  </p>
+                </div>
+              </div>
             </div>
-
-            <div className="mt-4 border-t pt-4">
-              <p className="text-xs text-neutral-500">
-                Profit
-              </p>
-
-              <p className="mt-1 text-lg font-semibold text-green-600">
-                {formatCurrency(
-                  stats.todayProfit
-                )}
-              </p>
-            </div>
-
-            <p className="mt-3 text-xs text-neutral-500">
-              {stats.todayOrders} orders
-            </p>
           </div>
 
-          {/* This Week */}
+          {/* =================================================
+              THIS WEEK
+          ================================================== */}
 
-          <div className="rounded-xl border bg-neutral-50 p-5">
-            <p className="text-sm font-medium text-neutral-500">
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-neutral-900">
               This Week
-            </p>
+            </h3>
 
-            <div className="mt-4">
-              <p className="text-xs text-neutral-500">
-                Sales
-              </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Online */}
 
-              <p className="mt-1 text-2xl font-bold text-neutral-950">
-                {formatCurrency(
-                  stats.weeklySales
-                )}
-              </p>
+              <div className="rounded-xl border bg-sky-50 p-5">
+                <p className="text-sm font-medium text-sky-700">
+                  Online Sales
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.weeklyOnlineSales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t border-sky-100 pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.weeklyOnlineProfit
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Store */}
+
+              <div className="rounded-xl border bg-amber-50 p-5">
+                <p className="text-sm font-medium text-amber-700">
+                  Store Sales
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.weeklyStoreSales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t border-amber-100 pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.weeklyStoreProfit
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Total */}
+
+              <div className="rounded-xl border bg-neutral-50 p-5">
+                <p className="text-sm font-medium text-neutral-600">
+                  Total
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.weeklySales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.weeklyProfit
+                    )}
+                  </p>
+
+                  <p className="mt-2 text-xs text-neutral-500">
+                    {stats.weeklyOrders} orders
+                  </p>
+                </div>
+              </div>
             </div>
-
-            <div className="mt-4 border-t pt-4">
-              <p className="text-xs text-neutral-500">
-                Profit
-              </p>
-
-              <p className="mt-1 text-lg font-semibold text-green-600">
-                {formatCurrency(
-                  stats.weeklyProfit
-                )}
-              </p>
-            </div>
-
-            <p className="mt-3 text-xs text-neutral-500">
-              {stats.weeklyOrders} orders
-            </p>
           </div>
 
-          {/* This Month */}
+          {/* =================================================
+              THIS MONTH
+          ================================================== */}
 
-          <div className="rounded-xl border bg-neutral-50 p-5">
-            <p className="text-sm font-medium text-neutral-500">
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-neutral-900">
               This Month
-            </p>
+            </h3>
 
-            <div className="mt-4">
-              <p className="text-xs text-neutral-500">
-                Sales
-              </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Online */}
 
-              <p className="mt-1 text-2xl font-bold text-neutral-950">
-                {formatCurrency(
-                  stats.monthlySales
-                )}
-              </p>
+              <div className="rounded-xl border bg-sky-50 p-5">
+                <p className="text-sm font-medium text-sky-700">
+                  Online Sales
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.monthlyOnlineSales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t border-sky-100 pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.monthlyOnlineProfit
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Store */}
+
+              <div className="rounded-xl border bg-amber-50 p-5">
+                <p className="text-sm font-medium text-amber-700">
+                  Store Sales
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.monthlyStoreSales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t border-amber-100 pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.monthlyStoreProfit
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Total */}
+
+              <div className="rounded-xl border bg-neutral-50 p-5">
+                <p className="text-sm font-medium text-neutral-600">
+                  Total
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.monthlySales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.monthlyProfit
+                    )}
+                  </p>
+
+                  <p className="mt-2 text-xs text-neutral-500">
+                    {stats.monthlyOrders} orders
+                  </p>
+                </div>
+              </div>
             </div>
-
-            <div className="mt-4 border-t pt-4">
-              <p className="text-xs text-neutral-500">
-                Profit
-              </p>
-
-              <p className="mt-1 text-lg font-semibold text-green-600">
-                {formatCurrency(
-                  stats.monthlyProfit
-                )}
-              </p>
-            </div>
-
-            <p className="mt-3 text-xs text-neutral-500">
-              {stats.monthlyOrders} orders
-            </p>
           </div>
 
-          {/* This Year */}
+          {/* =================================================
+              THIS YEAR
+          ================================================== */}
 
-          <div className="rounded-xl border bg-neutral-50 p-5">
-            <p className="text-sm font-medium text-neutral-500">
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-neutral-900">
               This Year
-            </p>
+            </h3>
 
-            <div className="mt-4">
-              <p className="text-xs text-neutral-500">
-                Sales
-              </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Online */}
 
-              <p className="mt-1 text-2xl font-bold text-neutral-950">
-                {formatCurrency(
-                  stats.yearlySales
-                )}
-              </p>
+              <div className="rounded-xl border bg-sky-50 p-5">
+                <p className="text-sm font-medium text-sky-700">
+                  Online Sales
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.yearlyOnlineSales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t border-sky-100 pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.yearlyOnlineProfit
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Store */}
+
+              <div className="rounded-xl border bg-amber-50 p-5">
+                <p className="text-sm font-medium text-amber-700">
+                  Store Sales
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.yearlyStoreSales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t border-amber-100 pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.yearlyStoreProfit
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Total */}
+
+              <div className="rounded-xl border bg-neutral-50 p-5">
+                <p className="text-sm font-medium text-neutral-600">
+                  Total
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-neutral-950">
+                  {formatCurrency(
+                    stats.yearlySales
+                  )}
+                </p>
+
+                <div className="mt-4 border-t pt-3">
+                  <p className="text-xs text-neutral-500">
+                    Profit
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-green-600">
+                    {formatCurrency(
+                      stats.yearlyProfit
+                    )}
+                  </p>
+
+                  <p className="mt-2 text-xs text-neutral-500">
+                    {stats.yearlyOrders} orders
+                  </p>
+                </div>
+              </div>
             </div>
-
-            <div className="mt-4 border-t pt-4">
-              <p className="text-xs text-neutral-500">
-                Profit
-              </p>
-
-              <p className="mt-1 text-lg font-semibold text-green-600">
-                {formatCurrency(
-                  stats.yearlyProfit
-                )}
-              </p>
-            </div>
-
-            <p className="mt-3 text-xs text-neutral-500">
-              {stats.yearlyOrders} orders
-            </p>
           </div>
         </div>
       </section>

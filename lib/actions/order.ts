@@ -3,30 +3,32 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { orderSchema } from "@/schemas/order-schema";
 
 export type CreateOrderItemInput = {
   product_id: string;
-  variant_id?: string | null;
   quantity: number;
 };
 
-type CreateOrderResult = {
-  success: boolean;
-  orderId?: string;
-  error?: string;
-};
+type CreateOrderResult =
+  | {
+      success: true;
+      orderId: string;
+    }
+  | {
+      success: false;
+      error: string;
+    };
 
 function generateOrderNumber() {
-  const timestamp = Date.now()
-    .toString()
-    .slice(-8);
+  const timestamp = Date.now().toString();
 
   const random = Math.floor(
-    100 + Math.random() * 900
-  );
+    1000 + Math.random() * 9000
+  ).toString();
 
-  return `MN-${timestamp}${random}`;
+  return `ORD-${timestamp.slice(
+    -8
+  )}-${random}`;
 }
 
 export async function createOrder(
@@ -35,432 +37,711 @@ export async function createOrder(
 ): Promise<CreateOrderResult> {
   const supabase = await createClient();
 
-  if (items.length === 0) {
-    return {
-      success: false,
-      error:
-        "Please add at least one product.",
-    };
-  }
+  try {
+    if (!items.length) {
+      return {
+        success: false,
+        error:
+          "Please add at least one product.",
+      };
+    }
 
-  const parsed = orderSchema.safeParse({
-    customer_name:
-      formData.get("customer_name"),
+    /*
+     * -------------------------------------------------------
+     * ORDER SOURCE
+     * -------------------------------------------------------
+     */
 
-    customer_phone:
-      formData.get("customer_phone"),
+    const orderSource =
+      String(
+        formData.get("order_source") ||
+          "online"
+      ) === "store"
+        ? "store"
+        : "online";
 
-    customer_email:
-      formData.get("customer_email"),
+    /*
+     * -------------------------------------------------------
+     * CUSTOMER
+     * -------------------------------------------------------
+     */
 
-    shipping_address:
-      formData.get("shipping_address"),
+    const customerNameInput =
+      String(
+        formData.get(
+          "customer_name"
+        ) || ""
+      ).trim();
 
-    discount_amount:
-      formData.get("discount_amount") || 0,
+    const customerName =
+      customerNameInput ||
+      (orderSource === "store"
+        ? "Walk-in Customer"
+        : "");
 
-    shipping_amount:
-      formData.get("shipping_amount") || 0,
+    const customerPhone =
+      String(
+        formData.get(
+          "customer_phone"
+        ) || ""
+      ).trim();
 
-    payment_method:
-      formData.get("payment_method"),
+    const customerEmail =
+      String(
+        formData.get(
+          "customer_email"
+        ) || ""
+      ).trim() || null;
 
-    notes:
-      formData.get("notes"),
-  });
+    const deliveryAddress =
+      String(
+        formData.get(
+          "shipping_address"
+        ) || ""
+      ).trim() || null;
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      error:
-        "Please check the customer and order information.",
-    };
-  }
+    const notes =
+      String(
+        formData.get("notes") || ""
+      ).trim() || null;
 
-  const discountAmount = Number(
-    parsed.data.discount_amount || 0
-  );
+    /*
+     * -------------------------------------------------------
+     * PAYMENT
+     * -------------------------------------------------------
+     */
 
-  const shippingAmount = Number(
-    parsed.data.shipping_amount || 0
-  );
+    const paymentMethod =
+      String(
+        formData.get(
+          "payment_method"
+        ) ||
+          "cash_on_delivery"
+      );
 
-  // =====================================================
-  // Validate item quantities
-  // =====================================================
+    /*
+     * -------------------------------------------------------
+     * DISCOUNT
+     * -------------------------------------------------------
+     */
 
-  for (const item of items) {
+    const discountAmount =
+      Math.max(
+        0,
+        Number(
+          formData.get(
+            "discount_amount"
+          ) || 0
+        )
+      );
+
+    /*
+     * -------------------------------------------------------
+     * DELIVERY CHARGE
+     *
+     * Store sale = always 0
+     * Online order = supplied amount
+     * -------------------------------------------------------
+     */
+
+    const deliveryCharge =
+      orderSource === "store"
+        ? 0
+        : Math.max(
+            0,
+            Number(
+              formData.get(
+                "shipping_amount"
+              ) || 0
+            )
+          );
+
+    /*
+     * -------------------------------------------------------
+     * VALIDATION
+     * -------------------------------------------------------
+     */
+
+    if (!customerName) {
+      return {
+        success: false,
+        error:
+          "Customer name is required.",
+      };
+    }
+
+    /*
+     * Online order requires phone.
+     *
+     * Store sale does not require
+     * customer phone.
+     */
+
     if (
-      !Number.isInteger(item.quantity) ||
-      item.quantity <= 0
+      orderSource === "online" &&
+      !customerPhone
     ) {
       return {
         success: false,
         error:
-          "Invalid product quantity.",
+          "Customer phone is required.",
       };
     }
-  }
 
-  // =====================================================
-  // Unique product IDs
-  // =====================================================
+    /*
+     * -------------------------------------------------------
+     * LOAD PRODUCTS
+     * -------------------------------------------------------
+     */
 
-  const productIds = [
-    ...new Set(
-      items.map(
-        (item) => item.product_id
+    const productIds = items.map(
+      (item) => item.product_id
+    );
+
+    const {
+      data: products,
+      error: productsError,
+    } = await supabase
+      .from("products")
+      .select(
+        `
+          id,
+          name,
+          sku,
+          color,
+          size,
+          purchase_cost,
+          regular_price,
+          sale_price,
+          stock_quantity
+        `
       )
-    ),
-  ];
+      .in("id", productIds);
 
-  // =====================================================
-  // Unique variant IDs
-  // =====================================================
+    if (productsError) {
+      throw productsError;
+    }
 
-  const variantIds = [
-    ...new Set(
-      items
-        .map(
-          (item) =>
-            item.variant_id
-        )
-        .filter(
-          (
-            id
-          ): id is string =>
-            Boolean(id)
-        )
-    ),
-  ];
-
-  // =====================================================
-  // Fetch products
-  // =====================================================
-
-  const {
-    data: products,
-    error: productsError,
-  } = await supabase
-    .from("products")
-    .select(
-      `
-        id,
-        name,
-        sku,
-        purchase_cost,
-        regular_price,
-        sale_price,
-        stock_quantity,
-        is_active
-      `
-    )
-    .in("id", productIds);
-
-  if (productsError) {
-    return {
-      success: false,
-      error:
-        productsError.message,
-    };
-  }
-
-  if (
-    !products ||
-    products.length !== productIds.length
-  ) {
-    return {
-      success: false,
-      error:
-        "One or more selected products were not found.",
-    };
-  }
-
-  // =====================================================
-  // Fetch variants
-  // =====================================================
-
-  const {
-    data: variants,
-    error: variantsError,
-  } = variantIds.length > 0
-    ? await supabase
-        .from("product_variants")
-        .select(
-          `
-            id,
-            product_id,
-            sku,
-            size,
-            color,
-            purchase_cost,
-            regular_price,
-            sale_price,
-            stock_quantity,
-            is_active
-          `
-        )
-        .in(
-          "id",
-          variantIds
-        )
-    : {
-        data: [],
-        error: null,
-      };
-
-  if (variantsError) {
-    return {
-      success: false,
-      error:
-        variantsError.message,
-    };
-  }
-
-  if (
-    variantIds.length > 0 &&
-    (!variants ||
-      variants.length !==
-        variantIds.length)
-  ) {
-    return {
-      success: false,
-      error:
-        "One or more selected product variants were not found.",
-    };
-  }
-
-  // =====================================================
-  // Calculate subtotal using current DB prices
-  // =====================================================
-
-  let subtotal = 0;
-
-  for (const item of items) {
-    const product =
-      products.find(
-        (product) =>
-          product.id ===
-          item.product_id
-      );
-
-    if (!product) {
+    if (
+      !products ||
+      products.length !==
+        productIds.length
+    ) {
       return {
         success: false,
         error:
-          "Product not found.",
+          "One or more selected products no longer exist.",
       };
     }
 
-    if (!product.is_active) {
-      return {
-        success: false,
-        error:
-          `${product.name} is not available.`,
-      };
-    }
+    /*
+     * -------------------------------------------------------
+     * VALIDATE STOCK
+     * + BUILD ORDER ITEMS
+     * -------------------------------------------------------
+     */
 
-    // ===================================================
-    // Variant item
-    // ===================================================
+    const orderItems: {
+      product_id: string;
+      product_name: string;
+      sku: string | null;
+      variant_id: string | null;
+      color: string | null;
+      size: string | null;
+      quantity: number;
+      unit_price: number;
+      line_total: number;
+      purchase_cost: number;
+    }[] = [];
 
-    if (item.variant_id) {
-      const variant =
-        variants?.find(
-          (variant) =>
-            variant.id ===
-            item.variant_id
+    let subtotal = 0;
+
+    for (const item of items) {
+      const product =
+        products.find(
+          (product) =>
+            product.id ===
+            item.product_id
         );
 
-      if (!variant) {
+      if (!product) {
         return {
           success: false,
           error:
-            `Variant not found for ${product.name}.`,
+            "Selected product was not found.",
         };
       }
 
+      const quantity =
+        Number(item.quantity);
+
       if (
-        variant.product_id !==
-        product.id
+        !Number.isInteger(
+          quantity
+        ) ||
+        quantity <= 0
       ) {
         return {
           success: false,
           error:
-            "Selected variant does not belong to the selected product.",
+            `Invalid quantity for ${product.name}.`,
         };
       }
 
-      if (!variant.is_active) {
-        return {
-          success: false,
-          error:
-            `Selected variant for ${product.name} is unavailable.`,
-        };
-      }
+      /*
+       * Server-side stock validation.
+       */
 
       if (
         Number(
-          variant.stock_quantity
-        ) < item.quantity
+          product.stock_quantity
+        ) < quantity
       ) {
         return {
           success: false,
           error:
-            `Insufficient stock for ${product.name}.`,
+            `${product.name} has only ${product.stock_quantity} pcs available.`,
         };
       }
 
-      const unitPrice = Number(
-        variant.sale_price ??
-          variant.regular_price ??
+      /*
+       * Sale price if available,
+       * otherwise regular price.
+       */
+
+      const unitPrice =
+        Number(
           product.sale_price ??
-          product.regular_price ??
-          0
-      );
+            product.regular_price
+        );
 
-      subtotal +=
-        unitPrice * item.quantity;
+      const lineTotal =
+        unitPrice * quantity;
 
-      continue;
+      subtotal += lineTotal;
+
+      /*
+       * Snapshot purchase cost at the
+       * time of sale.
+       */
+
+      orderItems.push({
+        product_id:
+          product.id,
+
+        product_name:
+          product.name,
+
+        sku:
+          product.sku,
+
+        variant_id:
+          null,
+
+        color:
+          product.color,
+
+        size:
+          product.size,
+
+        quantity,
+
+        unit_price:
+          unitPrice,
+
+        line_total:
+          lineTotal,
+
+        purchase_cost:
+          Number(
+            product.purchase_cost || 0
+          ),
+      });
     }
 
-    // ===================================================
-    // Normal product item
-    // ===================================================
+    /*
+     * -------------------------------------------------------
+     * DISCOUNT VALIDATION
+     * -------------------------------------------------------
+     */
 
     if (
-      Number(
-        product.stock_quantity
-      ) < item.quantity
+      discountAmount >
+      subtotal
     ) {
       return {
         success: false,
         error:
-          `Insufficient stock for ${product.name}.`,
+          "Discount cannot be greater than subtotal.",
       };
     }
 
-    const unitPrice = Number(
-      product.sale_price ??
-        product.regular_price ??
-        0
-    );
+    /*
+     * -------------------------------------------------------
+     * TOTAL
+     * -------------------------------------------------------
+     */
 
-    subtotal +=
-      unitPrice * item.quantity;
-  }
+    const totalAmount =
+      subtotal -
+      discountAmount +
+      deliveryCharge;
 
-  // =====================================================
-  // Validate discount
-  // =====================================================
+    /*
+     * Prevent unused-variable issue
+     * while keeping total calculation
+     * explicit for order creation.
+     */
 
-  if (discountAmount < 0) {
-    return {
-      success: false,
-      error:
-        "Discount cannot be negative.",
-    };
-  }
+    void totalAmount;
 
-  if (shippingAmount < 0) {
-    return {
-      success: false,
-      error:
-        "Shipping cannot be negative.",
-    };
-  }
+    /*
+     * -------------------------------------------------------
+     * PAYMENT / ORDER STATUS
+     * -------------------------------------------------------
+     *
+     * Store:
+     * payment = paid
+     * status = confirmed
+     *
+     * Online:
+     * payment = pending
+     * status = pending
+     * -------------------------------------------------------
+     */
 
-  if (
-    discountAmount > subtotal
-  ) {
-    return {
-      success: false,
-      error:
-        "Discount cannot be greater than subtotal.",
-    };
-  }
+    const paymentStatus =
+      orderSource === "store"
+        ? "paid"
+        : "pending";
 
-  const totalAmount =
-    subtotal -
-    discountAmount +
-    shippingAmount;
+    const orderStatus =
+      orderSource === "store"
+        ? "confirmed"
+        : "pending";
 
-  // =====================================================
-  // Create order atomically
-  // =====================================================
+    /*
+     * -------------------------------------------------------
+     * CREATE ORDER
+     * -------------------------------------------------------
+     */
 
-  const {
-    data: orderId,
-    error: rpcError,
-  } = await supabase.rpc(
-    "create_order_with_stock",
-    {
-      p_order_number:
-        generateOrderNumber(),
+    const {
+      data: order,
+      error: orderError,
+    } = await supabase
+      .from("orders")
+      .insert({
+        order_number:
+          generateOrderNumber(),
 
-      p_customer_name:
-        parsed.data.customer_name,
+        customer_name:
+          customerName,
 
-      p_customer_phone:
-        parsed.data.customer_phone,
+        customer_phone:
+          customerPhone ||
+          "N/A",
 
-      p_customer_email:
-        parsed.data.customer_email ||
-        "",
+        customer_email:
+          customerEmail,
 
-      p_shipping_address:
-        parsed.data.shipping_address ||
-        "",
+        delivery_address:
+          deliveryAddress,
 
-      p_subtotal:
+        district:
+          null,
+
+        notes,
+
         subtotal,
 
-      p_discount_amount:
-        discountAmount,
+        delivery_charge:
+          deliveryCharge,
 
-      p_shipping_amount:
-        shippingAmount,
+        discount_amount:
+          discountAmount,
 
-      p_total_amount:
-        totalAmount,
+        payment_method:
+          paymentMethod,
 
-      p_payment_method:
-        parsed.data.payment_method,
+        payment_status:
+          paymentStatus,
 
-      p_notes:
-        parsed.data.notes || "",
+        order_status:
+          orderStatus,
 
-      p_items: items,
+        order_source:
+          orderSource,
+      })
+      .select("id")
+      .single();
+
+    if (orderError) {
+      throw orderError;
     }
+
+    /*
+     * -------------------------------------------------------
+     * CREATE ORDER ITEMS
+     * -------------------------------------------------------
+     */
+
+    const itemsToInsert =
+      orderItems.map(
+        (item) => ({
+          order_id:
+            order.id,
+
+          product_id:
+            item.product_id,
+
+          variant_id:
+            item.variant_id,
+
+          product_name:
+            item.product_name,
+
+          sku:
+            item.sku,
+
+          color:
+            item.color,
+
+          size:
+            item.size,
+
+          quantity:
+            item.quantity,
+
+          unit_price:
+            item.unit_price,
+
+          line_total:
+            item.line_total,
+
+          purchase_cost:
+            item.purchase_cost,
+        })
+      );
+
+    const {
+      error: orderItemsError,
+    } = await supabase
+      .from("order_items")
+      .insert(
+        itemsToInsert
+      );
+
+    if (orderItemsError) {
+      /*
+       * Roll back order if
+       * order items fail.
+       */
+
+      await supabase
+        .from("orders")
+        .delete()
+        .eq(
+          "id",
+          order.id
+        );
+
+      throw orderItemsError;
+    }
+
+    /*
+     * -------------------------------------------------------
+     * DEDUCT STOCK
+     * -------------------------------------------------------
+     */
+
+    const updatedProducts: string[] =
+      [];
+
+    for (const item of orderItems) {
+      const product =
+        products.find(
+          (product) =>
+            product.id ===
+            item.product_id
+        );
+
+      if (!product) {
+        throw new Error(
+          "Product not found during stock update."
+        );
+      }
+
+      const newStock =
+        Number(
+          product.stock_quantity
+        ) -
+        Number(item.quantity);
+
+      const {
+        data: updatedProduct,
+        error: stockError,
+      } = await supabase
+        .from("products")
+        .update({
+          stock_quantity:
+            newStock,
+        })
+        .eq(
+          "id",
+          item.product_id
+        )
+        .select("id")
+        .single();
+
+      if (
+        stockError ||
+        !updatedProduct
+      ) {
+        /*
+         * Restore previously updated
+         * products if stock update fails.
+         */
+
+        for (const updatedId of updatedProducts) {
+          const original =
+            products.find(
+              (product) =>
+                product.id ===
+                updatedId
+            );
+
+          if (original) {
+            await supabase
+              .from("products")
+              .update({
+                stock_quantity:
+                  Number(
+                    original.stock_quantity
+                  ),
+              })
+              .eq(
+                "id",
+                updatedId
+              );
+          }
+        }
+
+        /*
+         * Remove created order items.
+         */
+
+        await supabase
+          .from("order_items")
+          .delete()
+          .eq(
+            "order_id",
+            order.id
+          );
+
+        /*
+         * Remove created order.
+         */
+
+        await supabase
+          .from("orders")
+          .delete()
+          .eq(
+            "id",
+            order.id
+          );
+
+        throw (
+          stockError ||
+          new Error(
+            "Unable to update product stock."
+          )
+        );
+      }
+
+      updatedProducts.push(
+        item.product_id
+      );
+    }
+
+    /*
+     * -------------------------------------------------------
+     * REVALIDATE
+     * -------------------------------------------------------
+     */
+
+    revalidatePath(
+      "/admin/orders"
+    );
+
+    revalidatePath(
+      "/admin/products"
+    );
+
+    revalidatePath(
+      "/admin/products/inventory"
+    );
+
+    revalidatePath(
+      "/admin/dashboard"
+    );
+
+    /*
+     * -------------------------------------------------------
+     * SUCCESS
+     * -------------------------------------------------------
+     */
+
+    return {
+      success: true,
+      orderId: order.id,
+    };
+} catch (error) {
+  console.error(
+    "createOrder error:",
+    error
   );
 
-  if (rpcError) {
+  if (
+    error &&
+    typeof error === "object"
+  ) {
+    const supabaseError =
+      error as {
+        message?: string;
+        details?: string;
+        hint?: string;
+        code?: string;
+      };
+
+    console.error(
+      "Supabase error details:",
+      {
+        message:
+          supabaseError.message,
+        details:
+          supabaseError.details,
+        hint:
+          supabaseError.hint,
+        code:
+          supabaseError.code,
+      }
+    );
+
     return {
       success: false,
       error:
-        rpcError.message,
+        supabaseError.message ||
+        "Unable to create order.",
     };
   }
-
-  if (!orderId) {
-    return {
-      success: false,
-      error:
-        "Order was not created.",
-    };
-  }
-
-  revalidatePath(
-    "/admin/orders"
-  );
-
-  revalidatePath(
-    "/admin/products"
-  );
 
   return {
-    success: true,
-    orderId,
+    success: false,
+    error:
+      error instanceof Error
+        ? error.message
+        : "Unable to create order.",
   };
+}
 }

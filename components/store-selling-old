@@ -1,0 +1,416 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import type { Product } from "@/types/product";
+
+type Props = {
+  products: Product[];
+};
+
+export function StoreProductSelector({
+  products,
+}: Props) {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] =
+    useState("");
+  const [size, setSize] = useState("");
+
+  const categories = useMemo(() => {
+    const map = new Map<
+      string,
+      string
+    >();
+
+    products.forEach((product) => {
+      if (
+        product.category?.id &&
+        product.category.name
+      ) {
+        map.set(
+          product.category.id,
+          product.category.name
+        );
+      }
+    });
+
+    return Array.from(
+      map.entries()
+    ).sort((a, b) =>
+      a[1].localeCompare(b[1])
+    );
+  }, [products]);
+
+  const sizes = useMemo(() => {
+    const uniqueSizes =
+      new Set<string>();
+
+    products.forEach((product) => {
+      if (product.size) {
+        uniqueSizes.add(
+          product.size
+        );
+      }
+    });
+
+    return Array.from(
+      uniqueSizes
+    ).sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }, [products]);
+
+  const filteredProducts =
+    useMemo(() => {
+      const searchValue =
+        search
+          .trim()
+          .toLowerCase();
+
+      return products.filter(
+        (product) => {
+          const matchesSearch =
+            !searchValue ||
+            product.name
+              .toLowerCase()
+              .includes(
+                searchValue
+              ) ||
+            (
+              product.sku || ""
+            )
+              .toLowerCase()
+              .includes(
+                searchValue
+              ) ||
+            (
+              product.color || ""
+            )
+              .toLowerCase()
+              .includes(
+                searchValue
+              ) ||
+            (
+              product.size || ""
+            )
+              .toLowerCase()
+              .includes(
+                searchValue
+              );
+
+          const matchesCategory =
+            !category ||
+            product.category_id ===
+              category;
+
+          const matchesSize =
+            !size ||
+            product.size ===
+              size;
+
+          return (
+            matchesSearch &&
+            matchesCategory &&
+            matchesSize
+          );
+        }
+      );
+    }, [
+      products,
+      search,
+      category,
+      size,
+    ]);
+
+  function clearFilters() {
+    setSearch("");
+    setCategory("");
+    setSize("");
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Filters */}
+
+      <div className="grid gap-4 md:grid-cols-4">
+        {/* Search */}
+
+        <div className="md:col-span-2">
+          <label
+            htmlFor="store-product-search"
+            className="mb-2 block text-sm font-medium text-neutral-900"
+          >
+            Search Product
+          </label>
+
+          <input
+            id="store-product-search"
+            type="search"
+            value={search}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder="Product name, SKU, color or size..."
+            className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+          />
+        </div>
+
+        {/* Category */}
+
+        <div>
+          <label
+            htmlFor="store-category"
+            className="mb-2 block text-sm font-medium text-neutral-900"
+          >
+            Category
+          </label>
+
+          <select
+            id="store-category"
+            value={category}
+            onChange={(event) =>
+              setCategory(
+                event.target.value
+              )
+            }
+            className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+          >
+            <option value="">
+              All Categories
+            </option>
+
+            {categories.map(
+              ([id, name]) => (
+                <option
+                  key={id}
+                  value={id}
+                >
+                  {name}
+                </option>
+              )
+            )}
+          </select>
+        </div>
+
+        {/* Size */}
+
+        <div>
+          <label
+            htmlFor="store-size"
+            className="mb-2 block text-sm font-medium text-neutral-900"
+          >
+            Size
+          </label>
+
+          <select
+            id="store-size"
+            value={size}
+            onChange={(event) =>
+              setSize(
+                event.target.value
+              )
+            }
+            className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+          >
+            <option value="">
+              All Sizes
+            </option>
+
+            {sizes.map(
+              (itemSize) => (
+                <option
+                  key={itemSize}
+                  value={itemSize}
+                >
+                  {itemSize}
+                </option>
+              )
+            )}
+          </select>
+        </div>
+      </div>
+
+      {/* Filter Summary */}
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-neutral-500">
+          Showing{" "}
+          <span className="font-semibold text-neutral-900">
+            {filteredProducts.length}
+          </span>{" "}
+          of{" "}
+          <span className="font-semibold text-neutral-900">
+            {products.length}
+          </span>{" "}
+          products
+        </p>
+
+        {(search ||
+          category ||
+          size) && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-sm font-medium text-sky-600 hover:text-sky-700"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {/* Product Table */}
+
+      <div className="overflow-hidden rounded-xl border">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px]">
+            <thead className="bg-neutral-50">
+              <tr>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Product
+                </th>
+
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Category
+                </th>
+
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Color
+                </th>
+
+                <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Size
+                </th>
+
+                <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Available
+                </th>
+
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Sale Price
+                </th>
+
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Action
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filteredProducts.map(
+                (product) => {
+                  const stock =
+                    Number(
+                      product.stock_quantity
+                    );
+
+                  const price =
+                    Number(
+                      product.sale_price ??
+                        product.regular_price
+                    );
+
+                  return (
+                    <tr
+                      key={product.id}
+                      className="border-t transition hover:bg-neutral-50"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="font-medium text-neutral-900">
+                          {product.name}
+                        </div>
+
+                        <div className="mt-1 text-xs text-neutral-500">
+                          SKU:{" "}
+                          {product.sku ||
+                            "-"}
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-4 text-sm text-neutral-600">
+                        {product.category
+                          ?.name ||
+                          "-"}
+                      </td>
+
+                      <td className="px-5 py-4 text-sm text-neutral-600">
+                        {product.color ||
+                          "-"}
+                      </td>
+
+                      <td className="px-5 py-4 text-center text-sm text-neutral-600">
+                        {product.size ||
+                          "-"}
+                      </td>
+
+                      <td className="px-5 py-4 text-center">
+                        <span
+                          className={
+                            stock === 0
+                              ? "font-semibold text-red-600"
+                              : stock <=
+                                  product.low_stock_threshold
+                                ? "font-semibold text-amber-600"
+                                : "font-semibold text-neutral-900"
+                          }
+                        >
+                          {stock}
+                        </span>
+                      </td>
+
+                      <td className="px-5 py-4 text-right font-semibold text-neutral-900">
+                        ৳
+                        {price.toLocaleString(
+                          "en-BD",
+                          {
+                            minimumFractionDigits:
+                              2,
+                            maximumFractionDigits:
+                              2,
+                          }
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4 text-right">
+                        <button
+                          type="button"
+                          disabled={
+                            stock <= 0
+                          }
+                          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                        >
+                          Select
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }
+              )}
+
+              {filteredProducts.length ===
+                0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-5 py-12 text-center"
+                  >
+                    <p className="font-medium text-neutral-700">
+                      No products found
+                    </p>
+
+                    <p className="mt-1 text-sm text-neutral-500">
+                      Try a different product
+                      name, SKU, category or
+                      size.
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

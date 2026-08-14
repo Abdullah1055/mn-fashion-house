@@ -9,23 +9,28 @@ export default async function NewOrderPage() {
   const products = await getProducts();
 
   const availableProducts = products.map(
-    (product) => ({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      regular_price: Number(
-        product.regular_price
-      ),
-      sale_price:
-        product.sale_price === null
-          ? null
-          : Number(product.sale_price),
-      stock_quantity: Number(
-        product.stock_quantity
-      ),
-    })
-  );
+  (product) => ({
+    id: product.id,
+    name: product.name,
+    sku: product.sku,
 
+    color: product.color ?? null,
+    size: product.size ?? null,
+
+    regular_price: Number(
+      product.regular_price
+    ),
+
+    sale_price:
+      product.sale_price === null
+        ? null
+        : Number(product.sale_price),
+
+    stock_quantity: Number(
+      product.stock_quantity
+    ),
+  })
+);
   return (
     <div className="space-y-8">
       <div>

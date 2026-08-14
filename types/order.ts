@@ -9,6 +9,10 @@ export type PaymentStatus =
   | "failed"
   | "refunded";
 
+export type OrderSource =
+  | "online"
+  | "store";
+
 export type OrderStatus =
   | "pending"
   | "confirmed"
@@ -45,6 +49,8 @@ export interface Order {
   payment_status: PaymentStatus;
 
   order_status: OrderStatus;
+
+  order_source: OrderSource;
 
   created_at: string;
 

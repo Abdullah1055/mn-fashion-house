@@ -9,18 +9,34 @@ export type DashboardStats = {
   todaySales: number;
   todayProfit: number;
   todayOrders: number;
+  todayOnlineSales: number;
+  todayStoreSales: number;
+  todayOnlineProfit: number;
+  todayStoreProfit: number;
 
   weeklySales: number;
   weeklyProfit: number;
   weeklyOrders: number;
+  weeklyOnlineSales: number;
+  weeklyStoreSales: number;
+  weeklyOnlineProfit: number;
+  weeklyStoreProfit: number;
 
   monthlySales: number;
   monthlyProfit: number;
   monthlyOrders: number;
+  monthlyOnlineSales: number;
+  monthlyStoreSales: number;
+  monthlyOnlineProfit: number;
+  monthlyStoreProfit: number;
 
   yearlySales: number;
   yearlyProfit: number;
   yearlyOrders: number;
+  yearlyOnlineSales: number;
+  yearlyStoreSales: number;
+  yearlyOnlineProfit: number;
+  yearlyStoreProfit: number;
 };
 
 export type DashboardInventoryItem = {
@@ -38,6 +54,7 @@ type DashboardOrder = {
   discount_amount: number;
   created_at: string;
   order_status: string;
+  order_source: "online" | "store";
 };
 
 type DashboardOrderItem = {
@@ -45,6 +62,16 @@ type DashboardOrderItem = {
   quantity: number;
   line_total: number;
   purchase_cost: number | null;
+};
+
+type PeriodTotals = {
+  sales: number;
+  profit: number;
+  orders: number;
+  onlineSales: number;
+  storeSales: number;
+  onlineProfit: number;
+  storeProfit: number;
 };
 
 function getStartOfDay(date: Date) {
@@ -107,17 +134,34 @@ function getOrderCost(
     .reduce(
       (total, item) =>
         total +
-        Number(item.purchase_cost || 0) *
-          Number(item.quantity || 0),
+        Number(
+          item.purchase_cost || 0
+        ) *
+          Number(
+            item.quantity || 0
+          ),
       0
     );
+}
+
+function getOrderProfit(
+  order: DashboardOrder,
+  orderItems: DashboardOrderItem[]
+) {
+  return (
+    getOrderSales(order) -
+    getOrderCost(
+      order.id,
+      orderItems
+    )
+  );
 }
 
 function calculatePeriodTotals(
   orders: DashboardOrder[],
   orderItems: DashboardOrderItem[],
   startDate: Date
-) {
+): PeriodTotals {
   const startTime =
     startDate.getTime();
 
@@ -131,31 +175,47 @@ function calculatePeriodTotals(
         ).getTime() >= startTime
     );
 
-  const sales =
-    filteredOrders.reduce(
-      (total, order) =>
-        total +
-        getOrderSales(order),
-      0
-    );
+  let sales = 0;
+  let profit = 0;
+  let onlineSales = 0;
+  let storeSales = 0;
+  let onlineProfit = 0;
+  let storeProfit = 0;
 
-  const profit =
-    filteredOrders.reduce(
-      (total, order) =>
-        total +
-        getOrderSales(order) -
-        getOrderCost(
-          order.id,
-          orderItems
-        ),
-      0
-    );
+  for (const order of filteredOrders) {
+    const orderSales =
+      getOrderSales(order);
+
+    const orderProfit =
+      getOrderProfit(
+        order,
+        orderItems
+      );
+
+    sales += orderSales;
+    profit += orderProfit;
+
+    if (
+      order.order_source ===
+      "store"
+    ) {
+      storeSales += orderSales;
+      storeProfit += orderProfit;
+    } else {
+      onlineSales += orderSales;
+      onlineProfit += orderProfit;
+    }
+  }
 
   return {
     sales,
     profit,
     orders:
       filteredOrders.length,
+    onlineSales,
+    storeSales,
+    onlineProfit,
+    storeProfit,
   };
 }
 
@@ -191,7 +251,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
           subtotal,
           discount_amount,
           created_at,
-          order_status
+          order_status,
+          order_source
         `
       ),
 
@@ -290,6 +351,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     totalRevenue,
 
+    /* =========================
+       TODAY
+    ========================= */
+
     todaySales:
       today.sales,
 
@@ -298,6 +363,22 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     todayOrders:
       today.orders,
+
+    todayOnlineSales:
+      today.onlineSales,
+
+    todayStoreSales:
+      today.storeSales,
+
+    todayOnlineProfit:
+      today.onlineProfit,
+
+    todayStoreProfit:
+      today.storeProfit,
+
+    /* =========================
+       WEEK
+    ========================= */
 
     weeklySales:
       week.sales,
@@ -308,6 +389,22 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     weeklyOrders:
       week.orders,
 
+    weeklyOnlineSales:
+      week.onlineSales,
+
+    weeklyStoreSales:
+      week.storeSales,
+
+    weeklyOnlineProfit:
+      week.onlineProfit,
+
+    weeklyStoreProfit:
+      week.storeProfit,
+
+    /* =========================
+       MONTH
+    ========================= */
+
     monthlySales:
       month.sales,
 
@@ -317,6 +414,22 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     monthlyOrders:
       month.orders,
 
+    monthlyOnlineSales:
+      month.onlineSales,
+
+    monthlyStoreSales:
+      month.storeSales,
+
+    monthlyOnlineProfit:
+      month.onlineProfit,
+
+    monthlyStoreProfit:
+      month.storeProfit,
+
+    /* =========================
+       YEAR
+    ========================= */
+
     yearlySales:
       year.sales,
 
@@ -325,6 +438,18 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
     yearlyOrders:
       year.orders,
+
+    yearlyOnlineSales:
+      year.onlineSales,
+
+    yearlyStoreSales:
+      year.storeSales,
+
+    yearlyOnlineProfit:
+      year.onlineProfit,
+
+    yearlyStoreProfit:
+      year.storeProfit,
   };
 }
 

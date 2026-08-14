@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   BadgePercent,
   Settings,
+  Store,
 } from "lucide-react";
 
 export const NAV_ITEMS = [
@@ -33,6 +34,11 @@ export const NAV_ITEMS = [
     title: "Orders",
     href: "/admin/orders",
     icon: ShoppingCart,
+  },
+  {
+    title: "Store Selling",
+    href: "/admin/store-selling",
+    icon: Store,
   },
   {
     title: "Offers",

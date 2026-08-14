@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { OrderStatusControl } from "@/components/orders/order-status-control";
 
+import { OrderStatusControl } from "@/components/orders/order-status-control";
 import { getOrderWithItems } from "@/lib/services/order.service";
 
 function formatCurrency(value: number) {
@@ -42,8 +42,13 @@ export default async function OrderDetailsPage({
     0
   );
 
+  const orderTotal =
+    Number(order.subtotal || 0) +
+    Number(order.delivery_charge || 0) -
+    Number(order.discount_amount || 0);
+
   const estimatedProfit =
-    Number(order.total_amount) - totalCost;
+    orderTotal - totalCost;
 
   return (
     <div className="space-y-8">
@@ -82,9 +87,11 @@ export default async function OrderDetailsPage({
         </div>
       </div>
 
-      {/* Customer + Shipping */}
+      {/* Customer + Delivery */}
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Customer */}
+
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
             Customer Information
@@ -125,15 +132,33 @@ export default async function OrderDetailsPage({
           </div>
         </div>
 
+        {/* Delivery */}
+
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
-            Shipping Information
+            Delivery Information
           </h2>
 
-          <div className="mt-5">
-            <p className="text-sm leading-6 text-neutral-600">
-              {order.shipping_address || "-"}
-            </p>
+          <div className="mt-5 space-y-3 text-sm">
+            <div>
+              <p className="text-neutral-500">
+                Address
+              </p>
+
+              <p className="leading-6 text-neutral-700">
+                {order.delivery_address || "-"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-neutral-500">
+                District
+              </p>
+
+              <p className="font-medium">
+                {order.district || "-"}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -199,7 +224,7 @@ export default async function OrderDetailsPage({
 
                   <td className="px-6 py-4 text-right font-medium">
                     {formatCurrency(
-                      Number(item.subtotal)
+                      Number(item.line_total)
                     )}
                   </td>
                 </tr>
@@ -223,12 +248,16 @@ export default async function OrderDetailsPage({
       {/* Financial Summary */}
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Order Summary */}
+
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
             Order Summary
           </h2>
 
           <div className="mt-5 space-y-4 text-sm">
+            {/* Subtotal */}
+
             <div className="flex justify-between">
               <span className="text-neutral-500">
                 Subtotal
@@ -241,6 +270,8 @@ export default async function OrderDetailsPage({
               </span>
             </div>
 
+            {/* Discount */}
+
             <div className="flex justify-between">
               <span className="text-neutral-500">
                 Discount
@@ -249,22 +280,30 @@ export default async function OrderDetailsPage({
               <span className="font-medium">
                 -{" "}
                 {formatCurrency(
-                  Number(order.discount_amount)
+                  Number(
+                    order.discount_amount || 0
+                  )
                 )}
               </span>
             </div>
 
+            {/* Delivery */}
+
             <div className="flex justify-between">
               <span className="text-neutral-500">
-                Shipping
+                Delivery Charge
               </span>
 
               <span className="font-medium">
                 {formatCurrency(
-                  Number(order.shipping_amount)
+                  Number(
+                    order.delivery_charge || 0
+                  )
                 )}
               </span>
             </div>
+
+            {/* Grand Total */}
 
             <div className="border-t pt-4">
               <div className="flex justify-between text-base">
@@ -273,9 +312,7 @@ export default async function OrderDetailsPage({
                 </span>
 
                 <span className="font-bold">
-                  {formatCurrency(
-                    Number(order.total_amount)
-                  )}
+                  {formatCurrency(orderTotal)}
                 </span>
               </div>
             </div>
@@ -296,9 +333,7 @@ export default async function OrderDetailsPage({
               </span>
 
               <span className="font-medium">
-                {formatCurrency(
-                  Number(order.total_amount)
-                )}
+                {formatCurrency(orderTotal)}
               </span>
             </div>
 
@@ -335,9 +370,11 @@ export default async function OrderDetailsPage({
         </div>
       </div>
 
-      {/* Payment / Notes */}
+      {/* Payment + Notes */}
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Payment */}
+
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
             Payment
@@ -369,14 +406,19 @@ export default async function OrderDetailsPage({
           </div>
         </div>
 
+        {/* Notes */}
+
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold">
+              Notes
+            </h2>
+
             <OrderStatusControl
-             orderId={order.id}
-             currentStatus={order.order_status}
+              orderId={order.id}
+              currentStatus={order.order_status}
             />
-            Notes
-          </h2>
+          </div>
 
           <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
             {order.notes || "No notes added."}

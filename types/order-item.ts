@@ -5,17 +5,23 @@ export interface OrderItem {
 
   product_id: string;
 
+  variant_id: string | null;
+
   product_name: string;
 
   sku: string | null;
+
+  color: string | null;
+
+  size: string | null;
 
   quantity: number;
 
   unit_price: number;
 
-  purchase_cost: number;
+  line_total: number;
 
-  subtotal: number;
+  purchase_cost: number | null;
 
   created_at: string;
 }

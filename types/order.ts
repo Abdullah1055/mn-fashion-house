@@ -28,23 +28,23 @@ export interface Order {
 
   customer_email: string | null;
 
-  shipping_address: string | null;
+  delivery_address: string | null;
+
+  district: string | null;
+
+  notes: string | null;
 
   subtotal: number;
 
+  delivery_charge: number;
+
   discount_amount: number;
-
-  shipping_amount: number;
-
-  total_amount: number;
 
   payment_method: PaymentMethod;
 
   payment_status: PaymentStatus;
 
   order_status: OrderStatus;
-
-  notes: string | null;
 
   created_at: string;
 

@@ -38,6 +38,12 @@ function getProductFormData(
     sku:
       formData.get("sku"),
 
+    color:
+      formData.get("color"),
+      
+    size:
+      formData.get("size"),
+
     purchase_cost:
       formData.get("purchase_cost"),
 

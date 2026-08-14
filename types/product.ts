@@ -13,6 +13,10 @@ export interface Product {
 
   sku: string | null;
 
+  color: string | null;
+
+  size: string | null;
+
   purchase_cost: number;
 
   regular_price: number;

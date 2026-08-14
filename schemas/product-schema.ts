@@ -33,6 +33,16 @@ export const productSchema = z.object({
     .string()
     .optional(),
 
+  color: z
+    .string()
+    .trim()
+    .optional(),
+
+  size: z
+    .string()
+    .trim()
+    .optional(),
+
   purchase_cost: z.coerce.number(),
 
   regular_price: z.coerce.number(),

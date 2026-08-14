@@ -295,7 +295,7 @@ export function ProductForm({
         </div>
       </section>
 {/* =====================================================
-    PRICING AND STOCK
+    PRICING AND STOCK and color and size
 ====================================================== */}
 
 <section className="rounded-2xl border bg-white p-2 shadow-sm">
@@ -308,53 +308,54 @@ export function ProductForm({
   <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-7">
 
     {/* Color */}
-    <div>
-      <label
-        htmlFor="color"
-        className="mb-2 block text-sm font-medium"
-      >
-        Color
-      </label>
+<div>
+  <label
+    htmlFor="color"
+    className="mb-2 block text-sm font-medium"
+  >
+    Color
+  </label>
 
-      <input
-        id="color"
-        name="color"
-        type="text"
-        defaultValue=""
-        placeholder="Black"
-        className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-      />
-    </div>
+  <input
+    id="color"
+    name="color"
+    type="text"
+    defaultValue={product?.color || ""}
+    placeholder="Black"
+    className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+  />
+</div>
 
-    {/* Size */}
-    <div>
-      <label
-        htmlFor="size"
-        className="mb-2 block text-sm font-medium"
-      >
-        Size
-      </label>
+{/* Size */}
+<div>
+  <label
+    htmlFor="size"
+    className="mb-2 block text-sm font-medium"
+  >
+    Size
+  </label>
 
-      <select
-        id="size"
-        name="size"
-        defaultValue=""
-        className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-      >
-        <option value="">
-          Select size
-        </option>
-        <option value="S">S</option>
-        <option value="M">M</option>
-        <option value="L">L</option>
-        <option value="XL">XL</option>
-        <option value="2XL">2XL</option>
-        <option value="3XL">3XL</option>
-        <option value="Free Size">
-          Free Size
-        </option>
-      </select>
-    </div>
+  <select
+    id="size"
+    name="size"
+    defaultValue={product?.size || ""}
+    className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+  >
+    <option value="">
+      Select size
+    </option>
+
+    <option value="S">S</option>
+    <option value="M">M</option>
+    <option value="L">L</option>
+    <option value="XL">XL</option>
+    <option value="2XL">2XL</option>
+    <option value="3XL">3XL</option>
+    <option value="Free Size">
+      Free Size
+    </option>
+  </select>
+</div>
 
     {/* Purchase Cost */}
     <div>

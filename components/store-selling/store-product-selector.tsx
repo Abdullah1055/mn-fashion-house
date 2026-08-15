@@ -36,7 +36,7 @@ export function StoreProductSelector({
     useState("0");
 
   const [paymentMethod, setPaymentMethod] =
-    useState("cash_on_delivery");
+    useState("cod");
 
   const [loading, setLoading] =
     useState(false);
@@ -46,6 +46,10 @@ export function StoreProductSelector({
 
   const [success, setSuccess] =
     useState<string | null>(null);
+
+  /* =========================================================
+     CATEGORIES
+  ========================================================= */
 
   const categories = useMemo(() => {
     const map = new Map<string, string>();
@@ -68,6 +72,10 @@ export function StoreProductSelector({
     );
   }, [products]);
 
+  /* =========================================================
+     SIZES
+  ========================================================= */
+
   const sizes = useMemo(() => {
     const uniqueSizes =
       new Set<string>();
@@ -84,6 +92,10 @@ export function StoreProductSelector({
       a.localeCompare(b)
     );
   }, [products]);
+
+  /* =========================================================
+     FILTER PRODUCTS
+  ========================================================= */
 
   const filteredProducts =
     useMemo(() => {
@@ -138,11 +150,19 @@ export function StoreProductSelector({
       size,
     ]);
 
+  /* =========================================================
+     CLEAR FILTERS
+  ========================================================= */
+
   function clearFilters() {
     setSearch("");
     setCategory("");
     setSize("");
   }
+
+  /* =========================================================
+     ADD PRODUCT
+  ========================================================= */
 
   function addProduct(
     product: Product
@@ -204,6 +224,10 @@ export function StoreProductSelector({
     );
   }
 
+  /* =========================================================
+     REMOVE PRODUCT
+  ========================================================= */
+
   function removeProduct(
     productId: string
   ) {
@@ -216,6 +240,10 @@ export function StoreProductSelector({
         )
     );
   }
+
+  /* =========================================================
+     INCREASE QUANTITY
+  ========================================================= */
 
   function increaseQuantity(
     productId: string
@@ -248,6 +276,10 @@ export function StoreProductSelector({
     );
   }
 
+  /* =========================================================
+     DECREASE QUANTITY
+  ========================================================= */
+
   function decreaseQuantity(
     productId: string
   ) {
@@ -275,6 +307,10 @@ export function StoreProductSelector({
     );
   }
 
+  /* =========================================================
+     TOTALS
+  ========================================================= */
+
   const subtotal =
     saleItems.reduce(
       (total, item) => {
@@ -301,6 +337,10 @@ export function StoreProductSelector({
   const grandTotal =
     subtotal -
     discountValue;
+
+  /* =========================================================
+     CONFIRM STORE SALE
+  ========================================================= */
 
   async function handleConfirmSale() {
     setError(null);
@@ -342,18 +382,10 @@ export function StoreProductSelector({
       const formData =
         new FormData();
 
-      /*
-       * Store Sale
-       */
-
       formData.set(
         "order_source",
         "store"
       );
-
-      /*
-       * Walk-in customer
-       */
 
       formData.set(
         "customer_name",
@@ -385,27 +417,15 @@ export function StoreProductSelector({
         "Store sale"
       );
 
-      /*
-       * Payment
-       */
-
       formData.set(
         "payment_method",
-        paymentMethod
+        "cod"
       );
-
-      /*
-       * Store sale has no delivery
-       */
 
       formData.set(
         "shipping_amount",
         "0"
       );
-
-      /*
-       * Discount
-       */
 
       formData.set(
         "discount_amount",
@@ -427,25 +447,15 @@ export function StoreProductSelector({
         return;
       }
 
-      /*
-       * Clear current sale
-       */
-
       setSaleItems([]);
 
       setDiscount("0");
 
-      setPaymentMethod(
-        "cash_on_delivery"
-      );
+      setPaymentMethod("cod");
 
       setSuccess(
         "Store sale completed successfully."
       );
-
-      /*
-       * Refresh dashboard/product data
-       */
 
       router.refresh();
     } catch {
@@ -458,16 +468,18 @@ export function StoreProductSelector({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
+
       {/* =====================================================
           FILTERS
       ====================================================== */}
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-4">
+
         <div className="md:col-span-2">
           <label
             htmlFor="store-product-search"
-            className="mb-2 block text-sm font-medium text-neutral-900"
+            className="mb-1.5 block text-sm font-medium text-neutral-900"
           >
             Search Product
           </label>
@@ -482,14 +494,14 @@ export function StoreProductSelector({
               )
             }
             placeholder="Product name, SKU, color or size..."
-            className="h-11 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            className="h-10 w-full rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           />
         </div>
 
         <div>
           <label
             htmlFor="store-category"
-            className="mb-2 block text-sm font-medium text-neutral-900"
+            className="mb-1.5 block text-sm font-medium text-neutral-900"
           >
             Category
           </label>
@@ -502,7 +514,7 @@ export function StoreProductSelector({
                 event.target.value
               )
             }
-            className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           >
             <option value="">
               All Categories
@@ -524,7 +536,7 @@ export function StoreProductSelector({
         <div>
           <label
             htmlFor="store-size"
-            className="mb-2 block text-sm font-medium text-neutral-900"
+            className="mb-1.5 block text-sm font-medium text-neutral-900"
           >
             Size
           </label>
@@ -537,7 +549,7 @@ export function StoreProductSelector({
                 event.target.value
               )
             }
-            className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           >
             <option value="">
               All Sizes
@@ -558,200 +570,222 @@ export function StoreProductSelector({
       </div>
 
       {/* =====================================================
-          FILTER SUMMARY
+          PRODUCT TABLE
       ====================================================== */}
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500">
-          Showing{" "}
-          <span className="font-semibold text-neutral-900">
-            {filteredProducts.length}
-          </span>{" "}
-          of{" "}
-          <span className="font-semibold text-neutral-900">
-            {products.length}
-          </span>{" "}
-          products
-        </p>
+      <div className="pt-1">
+
+        <div className="overflow-hidden rounded-xl border border-neutral-300">
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px]">
+
+              <thead className="bg-neutral-50">
+                <tr>
+
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Product
+                  </th>
+
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Category
+                  </th>
+
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Color
+                  </th>
+
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Size
+                  </th>
+
+                  <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Available
+                  </th>
+
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Sale Price
+                  </th>
+
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Action
+                  </th>
+
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {filteredProducts.map(
+                  (product) => {
+
+                    const stock =
+                      Number(
+                        product.stock_quantity
+                      );
+
+                    const price =
+                      Number(
+                        product.sale_price ??
+                          product.regular_price
+                      );
+
+                    const selectedItem =
+                      saleItems.find(
+                        (item) =>
+                          item.product.id ===
+                          product.id
+                      );
+
+                    return (
+                      <tr
+                        key={product.id}
+                        className="border-t border-neutral-200 transition hover:bg-neutral-50"
+                      >
+
+                        <td className="px-4 py-1.5">
+                          <div className="text-sm font-medium text-neutral-900">
+                            {product.name}
+                          </div>
+
+                          <div className="mt-0.5 text-[11px] text-neutral-500">
+                            SKU:{" "}
+                            {product.sku ||
+                              "-"}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-1.5 text-sm text-neutral-600">
+                          {product.category
+                            ?.name ||
+                            "-"}
+                        </td>
+
+                        <td className="px-4 py-1.5 text-sm text-neutral-600">
+                          {product.color ||
+                            "-"}
+                        </td>
+
+                        <td className="px-4 py-1.5 text-center text-sm text-neutral-600">
+                          {product.size ||
+                            "-"}
+                        </td>
+
+                        <td className="px-4 py-1.5 text-center">
+                          <span
+                            className={
+                              stock === 0
+                                ? "font-semibold text-red-600"
+                                : stock <=
+                                    product.low_stock_threshold
+                                  ? "font-semibold text-amber-600"
+                                  : "font-semibold text-neutral-900"
+                            }
+                          >
+                            {stock}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-1.5 text-right text-sm font-semibold text-neutral-900">
+                          ৳
+                          {price.toLocaleString(
+                            "en-BD",
+                            {
+                              minimumFractionDigits:
+                                2,
+                              maximumFractionDigits:
+                                2,
+                            }
+                          )}
+                        </td>
+
+                        <td className="px-4 py-1.5 text-right">
+                          <button
+                            type="button"
+                            disabled={
+                              stock <= 0
+                            }
+                            onClick={() =>
+                              addProduct(
+                                product
+                              )
+                            }
+                            className="rounded-md bg-sky-600 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                          >
+                            {selectedItem
+                              ? "Add More"
+                              : "Select"}
+                          </button>
+                        </td>
+
+                      </tr>
+                    );
+                  }
+                )}
+
+                {filteredProducts.length ===
+                  0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-5 py-8 text-center"
+                    >
+                      <p className="font-medium text-neutral-700">
+                        No products found
+                      </p>
+
+                      <p className="mt-1 text-sm text-neutral-500">
+                        Try a different product
+                        name, SKU, category or size.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+
+              </tbody>
+            </table>
+          </div>
+
+          {/* =================================================
+              TABLE FOOTER
+          ================================================== */}
+
+          <div className="border-t border-neutral-200 bg-neutral-50 px-4 py-2.5">
+            <div className="flex items-center justify-start">
+
+              <p className="text-sm text-neutral-500">
+                Showing{" "}
+                <span className="font-semibold text-neutral-900">
+                  {filteredProducts.length}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-neutral-900">
+                  {products.length}
+                </span>{" "}
+                products
+              </p>
+
+            </div>
+          </div>
+
+        </div>
+
+        {/* CLEAR FILTERS */}
 
         {(search ||
           category ||
           size) && (
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="text-sm font-medium text-sky-600 hover:text-sky-700"
-          >
-            Clear filters
-          </button>
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-sm font-medium text-sky-600 hover:text-sky-700"
+            >
+              Clear filters
+            </button>
+          </div>
         )}
-      </div>
 
-      {/* =====================================================
-          PRODUCT TABLE
-      ====================================================== */}
-
-      <div className="overflow-hidden rounded-xl border">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <thead className="bg-neutral-50">
-              <tr>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Product
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Category
-                </th>
-
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Color
-                </th>
-
-                <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Size
-                </th>
-
-                <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Available
-                </th>
-
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Sale Price
-                </th>
-
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Action
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredProducts.map(
-                (product) => {
-                  const stock =
-                    Number(
-                      product.stock_quantity
-                    );
-
-                  const price =
-                    Number(
-                      product.sale_price ??
-                        product.regular_price
-                    );
-
-                  const selectedItem =
-                    saleItems.find(
-                      (item) =>
-                        item.product.id ===
-                        product.id
-                    );
-
-                  return (
-                    <tr
-                      key={product.id}
-                      className="border-t transition hover:bg-neutral-50"
-                    >
-                      <td className="px-5 py-4">
-                        <div className="font-medium text-neutral-900">
-                          {product.name}
-                        </div>
-
-                        <div className="mt-1 text-xs text-neutral-500">
-                          SKU:{" "}
-                          {product.sku ||
-                            "-"}
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-4 text-sm text-neutral-600">
-                        {product.category
-                          ?.name ||
-                          "-"}
-                      </td>
-
-                      <td className="px-5 py-4 text-sm text-neutral-600">
-                        {product.color ||
-                          "-"}
-                      </td>
-
-                      <td className="px-5 py-4 text-center text-sm text-neutral-600">
-                        {product.size ||
-                          "-"}
-                      </td>
-
-                      <td className="px-5 py-4 text-center">
-                        <span
-                          className={
-                            stock === 0
-                              ? "font-semibold text-red-600"
-                              : stock <=
-                                  product.low_stock_threshold
-                                ? "font-semibold text-amber-600"
-                                : "font-semibold text-neutral-900"
-                          }
-                        >
-                          {stock}
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-4 text-right font-semibold text-neutral-900">
-                        ৳
-                        {price.toLocaleString(
-                          "en-BD",
-                          {
-                            minimumFractionDigits:
-                              2,
-                            maximumFractionDigits:
-                              2,
-                          }
-                        )}
-                      </td>
-
-                      <td className="px-5 py-4 text-right">
-                        <button
-                          type="button"
-                          disabled={
-                            stock <= 0
-                          }
-                          onClick={() =>
-                            addProduct(
-                              product
-                            )
-                          }
-                          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
-                        >
-                          {selectedItem
-                            ? "Add More"
-                            : "Select"}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }
-              )}
-
-              {filteredProducts.length ===
-                0 && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-5 py-12 text-center"
-                  >
-                    <p className="font-medium text-neutral-700">
-                      No products found
-                    </p>
-
-                    <p className="mt-1 text-sm text-neutral-500">
-                      Try a different product
-                      name, SKU, category or size.
-                    </p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       {/* =====================================================
@@ -760,63 +794,72 @@ export function StoreProductSelector({
 
       {saleItems.length > 0 && (
         <section className="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-sm">
-          <div className="border-b border-sky-100 bg-sky-50 px-6 py-5">
+
+          {/* CURRENT SALE HEADER */}
+
+          <div className="border-b border-sky-100 bg-sky-300 px-5 py-2">
+
             <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-950">
-                  Current Sale
-                </h2>
 
-                <p className="mt-1 text-sm text-neutral-500">
-                  Products selected for this store sale.
-                </p>
-              </div>
+              <h2 className="text-base font-semibold text-neutral-950">
+                Current Sale
+              </h2>
 
-              <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">
+              <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
                 {saleItems.length}{" "}
                 {saleItems.length ===
                 1
                   ? "Item"
                   : "Items"}
               </span>
+
             </div>
+
           </div>
 
+          {/* SALE PRODUCTS */}
+
           <div className="overflow-x-auto">
+
             <table className="w-full min-w-[850px]">
+
               <thead className="bg-neutral-50">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Product
                   </th>
 
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Color
                   </th>
 
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Size
                   </th>
 
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Price
                   </th>
 
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Quantity
                   </th>
 
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Total
                   </th>
 
-                  <th className="px-5 py-3" />
+                  <th className="px-4 py-2" />
+
                 </tr>
               </thead>
 
               <tbody>
+
                 {saleItems.map(
                   (item) => {
+
                     const price =
                       Number(
                         item.product
@@ -834,17 +877,18 @@ export function StoreProductSelector({
                         key={
                           item.product.id
                         }
-                        className="border-t"
+                        className="border-t border-neutral-200"
                       >
-                        <td className="px-5 py-4">
-                          <div className="font-medium text-neutral-900">
+
+                        <td className="px-4 py-1.5">
+                          <div className="text-sm font-medium text-neutral-900">
                             {
                               item.product
                                 .name
                             }
                           </div>
 
-                          <div className="mt-1 text-xs text-neutral-500">
+                          <div className="mt-0.5 text-[11px] text-neutral-500">
                             SKU:{" "}
                             {item.product
                               .sku ||
@@ -852,19 +896,19 @@ export function StoreProductSelector({
                           </div>
                         </td>
 
-                        <td className="px-5 py-4 text-sm text-neutral-600">
+                        <td className="px-4 py-1.5 text-sm text-neutral-600">
                           {item.product
                             .color ||
                             "-"}
                         </td>
 
-                        <td className="px-5 py-4 text-center text-sm text-neutral-600">
+                        <td className="px-4 py-1.5 text-center text-sm text-neutral-600">
                           {item.product
                             .size ||
                             "-"}
                         </td>
 
-                        <td className="px-5 py-4 text-right font-medium">
+                        <td className="px-4 py-1.5 text-right text-sm font-medium">
                           ৳
                           {price.toLocaleString(
                             "en-BD",
@@ -877,8 +921,10 @@ export function StoreProductSelector({
                           )}
                         </td>
 
-                        <td className="px-5 py-4">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="px-4 py-1.5">
+
+                          <div className="flex items-center justify-center gap-1.5">
+
                             <button
                               type="button"
                               onClick={() =>
@@ -887,12 +933,12 @@ export function StoreProductSelector({
                                     .id
                                 )
                               }
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border text-lg font-semibold hover:bg-neutral-100"
+                              className="flex h-7 w-7 items-center justify-center rounded-md border border-neutral-300 text-base font-semibold hover:bg-neutral-100"
                             >
                               −
                             </button>
 
-                            <span className="w-8 text-center font-semibold">
+                            <span className="w-7 text-center text-sm font-semibold">
                               {
                                 item.quantity
                               }
@@ -911,22 +957,24 @@ export function StoreProductSelector({
                                     .id
                                 )
                               }
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border text-lg font-semibold hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="flex h-7 w-7 items-center justify-center rounded-md border border-neutral-300 text-base font-semibold hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               +
                             </button>
+
                           </div>
 
-                          <p className="mt-1 text-center text-[11px] text-neutral-400">
+                          <p className="mt-0.5 text-center text-[10px] text-neutral-400">
                             Stock:{" "}
                             {
                               item.product
                                 .stock_quantity
                             }
                           </p>
+
                         </td>
 
-                        <td className="px-5 py-4 text-right font-semibold">
+                        <td className="px-4 py-1.5 text-right text-sm font-semibold">
                           ৳
                           {total.toLocaleString(
                             "en-BD",
@@ -939,7 +987,8 @@ export function StoreProductSelector({
                           )}
                         </td>
 
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-4 py-1.5 text-right">
+
                           <button
                             type="button"
                             onClick={() =>
@@ -952,29 +1001,36 @@ export function StoreProductSelector({
                           >
                             Remove
                           </button>
+
                         </td>
+
                       </tr>
                     );
                   }
                 )}
+
               </tbody>
             </table>
+
           </div>
 
           {/* =================================================
               SALE SUMMARY
           ================================================== */}
 
-          <div className="border-t bg-neutral-50 px-6 py-6">
-            <div className="ml-auto max-w-md space-y-5">
-              {/* Subtotal */}
+          <div className="border-t bg-neutral-50 px-5 py-4">
+
+            <div className="ml-auto max-w-[420px] space-y-3">
+
+              {/* SUBTOTAL */}
 
               <div className="flex items-center justify-between">
+
                 <span className="text-sm text-neutral-500">
                   Subtotal
                 </span>
 
-                <span className="font-semibold text-neutral-900">
+                <span className="text-sm font-semibold text-neutral-900">
                   ৳
                   {subtotal.toLocaleString(
                     "en-BD",
@@ -986,14 +1042,16 @@ export function StoreProductSelector({
                     }
                   )}
                 </span>
+
               </div>
 
-              {/* Discount */}
+              {/* DISCOUNT */}
 
               <div>
+
                 <label
                   htmlFor="store-discount"
-                  className="mb-2 block text-sm font-medium text-neutral-900"
+                  className="mb-1 block text-sm font-medium text-neutral-900"
                 >
                   Discount
                 </label>
@@ -1009,16 +1067,18 @@ export function StoreProductSelector({
                       event.target.value
                     )
                   }
-                  className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                 />
+
               </div>
 
-              {/* Payment Method */}
+              {/* PAYMENT METHOD */}
 
               <div>
+
                 <label
                   htmlFor="store-payment"
-                  className="mb-2 block text-sm font-medium text-neutral-900"
+                  className="mb-1 block text-sm font-medium text-neutral-900"
                 >
                   Payment Method
                 </label>
@@ -1031,31 +1091,26 @@ export function StoreProductSelector({
                       event.target.value
                     )
                   }
-                  className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                 >
-                  <option value="cash_on_delivery">
+                  <option value="cod">
                     Cash
                   </option>
-
-                  <option value="online">
-                    Online Payment
-                  </option>
-
-                  <option value="bank_transfer">
-                    Bank Transfer
-                  </option>
                 </select>
+
               </div>
 
-              {/* Grand Total */}
+              {/* GRAND TOTAL */}
 
-              <div className="border-t pt-5">
+              <div className="border-t pt-3">
+
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-neutral-950">
+
+                  <span className="text-base font-bold text-neutral-950">
                     Grand Total
                   </span>
 
-                  <span className="text-2xl font-black text-neutral-950">
+                  <span className="text-xl font-black text-neutral-950">
                     ৳
                     {grandTotal.toLocaleString(
                       "en-BD",
@@ -1067,26 +1122,28 @@ export function StoreProductSelector({
                       }
                     )}
                   </span>
+
                 </div>
+
               </div>
 
-              {/* Error */}
+              {/* ERROR */}
 
               {error && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
                   {error}
                 </div>
               )}
 
-              {/* Success */}
+              {/* SUCCESS */}
 
               {success && (
-                <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+                <div className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
                   {success}
                 </div>
               )}
 
-              {/* Confirm */}
+              {/* CONFIRM */}
 
               <button
                 type="button"
@@ -1094,16 +1151,20 @@ export function StoreProductSelector({
                   handleConfirmSale
                 }
                 disabled={loading}
-                className="h-12 w-full rounded-lg bg-green-600 px-6 font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-10 w-full rounded-lg bg-green-600 px-6 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading
                   ? "Completing Sale..."
                   : "Confirm Store Sale"}
               </button>
+
             </div>
+
           </div>
+
         </section>
       )}
+
     </div>
   );
 }

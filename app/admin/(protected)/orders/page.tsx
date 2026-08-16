@@ -20,6 +20,8 @@ type SearchParams = {
   status?: string;
   payment?: string;
   source?: string;
+  from?: string;
+  to?: string;
   page?: string;
 };
 
@@ -127,6 +129,14 @@ function buildPageUrl(
     query.set("source", params.source);
   }
 
+  if (params.from) {
+    query.set("from", params.from);
+  }
+
+  if (params.to) {
+    query.set("to", params.to);
+  }
+
   query.set("page", String(page));
 
   return `/admin/orders?${query.toString()}`;
@@ -152,6 +162,12 @@ export default async function OrdersPage({
 
   const source =
     params.source || "";
+
+  const fromDate =
+    params.from || "";
+
+  const toDate =
+    params.to || "";
 
   const requestedPage = Number(
     params.page || "1"
@@ -255,6 +271,32 @@ export default async function OrdersPage({
 
   /*
    * =====================================================
+   * DATE FILTER
+   *
+   * From Date = start of selected day
+   * To Date   = end of selected day
+   *
+   * Bangladesh timezone (+06:00) is used so the
+   * selected calendar dates behave correctly.
+   * =====================================================
+   */
+
+  if (fromDate) {
+    query = query.gte(
+      "created_at",
+      `${fromDate}T00:00:00+06:00`
+    );
+  }
+
+  if (toDate) {
+    query = query.lte(
+      "created_at",
+      `${toDate}T23:59:59.999+06:00`
+    );
+  }
+
+  /*
+   * =====================================================
    * PAGINATION
    * =====================================================
    */
@@ -324,41 +366,54 @@ export default async function OrdersPage({
         0
       );
 
+  /*
+   * =====================================================
+   * ACTIVE DATE FILTER CHECK
+   * =====================================================
+   */
+
+  const hasDateFilter =
+    Boolean(
+      fromDate || toDate
+    );
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
+
       {/* =====================================================
           HEADER
       ====================================================== */}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
         <div>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-2xl font-bold tracking-tight">
             Orders
           </h1>
 
-          <p className="mt-2 text-neutral-500">
+          <p className="mt-1 text-sm text-neutral-500">
             Manage customer orders and sales.
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
+
           <Link
             href="/admin/products"
-            className="inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium transition hover:bg-neutral-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium transition hover:bg-neutral-50"
           >
-            <ShoppingCart size={17} />
-
+            <ShoppingCart size={16} />
             Products
           </Link>
 
           <Link
             href="/admin/orders/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-sky-700"
           >
-            <Plus size={17} />
-
+            <Plus size={16} />
             New Order
           </Link>
+
         </div>
       </div>
 
@@ -366,72 +421,116 @@ export default async function OrdersPage({
           SUMMARY
       ====================================================== */}
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-sm text-neutral-500">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <p className="text-xs text-neutral-500">
             Orders Found
           </p>
 
-          <p className="mt-2 text-3xl font-bold">
+          <p className="mt-1 text-2xl font-bold">
             {totalOrders}
           </p>
         </div>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-sm text-neutral-500">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <p className="text-xs text-neutral-500">
             Pending
           </p>
 
-          <p className="mt-2 text-3xl font-bold text-yellow-600">
+          <p className="mt-1 text-2xl font-bold text-yellow-600">
             {pendingOrders}
           </p>
         </div>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-sm text-neutral-500">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <p className="text-xs text-neutral-500">
             Delivered
           </p>
 
-          <p className="mt-2 text-3xl font-bold text-green-600">
+          <p className="mt-1 text-2xl font-bold text-green-600">
             {completedOrders}
           </p>
         </div>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-sm text-neutral-500">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <p className="text-xs text-neutral-500">
             Sales
           </p>
 
-          <p className="mt-2 text-3xl font-bold">
+          <p className="mt-1 text-2xl font-bold">
             {formatCurrency(totalSales)}
           </p>
         </div>
+
       </div>
 
       {/* =====================================================
           FILTERS
       ====================================================== */}
 
-      <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+
         <form
           method="GET"
-          className="grid gap-4 md:grid-cols-[1fr_180px_180px_180px_auto_auto]"
+          className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_145px_145px_170px_160px_150px_auto_auto]"
         >
+
           {/* Search */}
 
           <input
             name="search"
             defaultValue={search}
             placeholder="Search order, customer or phone..."
-            className="h-11 rounded-lg border border-neutral-300 px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            className="h-10 rounded-lg border border-neutral-300 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           />
+
+          {/* From Date */}
+
+          <div>
+            <label
+              htmlFor="orders-from-date"
+              className="sr-only"
+            >
+              From Date
+            </label>
+
+            <input
+              id="orders-from-date"
+              name="from"
+              type="date"
+              defaultValue={fromDate}
+              title="From Date"
+              className="h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm text-neutral-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
+
+          {/* To Date */}
+
+          <div>
+            <label
+              htmlFor="orders-to-date"
+              className="sr-only"
+            >
+              To Date
+            </label>
+
+            <input
+              id="orders-to-date"
+              name="to"
+              type="date"
+              defaultValue={toDate}
+              title="To Date"
+              className="h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm text-neutral-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
 
           {/* Order Status */}
 
           <select
             name="status"
             defaultValue={status}
-            className="h-11 rounded-lg border border-neutral-300 px-3 capitalize outline-none focus:border-sky-500"
+            className="h-10 rounded-lg border border-neutral-300 px-3 text-sm capitalize outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           >
             <option value="">
               All Order Status
@@ -467,7 +566,7 @@ export default async function OrdersPage({
           <select
             name="payment"
             defaultValue={payment}
-            className="h-11 rounded-lg border border-neutral-300 px-3 capitalize outline-none focus:border-sky-500"
+            className="h-10 rounded-lg border border-neutral-300 px-3 text-sm capitalize outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           >
             <option value="">
               All Payments
@@ -495,7 +594,7 @@ export default async function OrdersPage({
           <select
             name="source"
             defaultValue={source}
-            className="h-11 rounded-lg border border-neutral-300 px-3 outline-none focus:border-sky-500"
+            className="h-10 rounded-lg border border-neutral-300 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           >
             <option value="">
               All Sources
@@ -514,7 +613,7 @@ export default async function OrdersPage({
 
           <button
             type="submit"
-            className="h-11 rounded-lg bg-sky-600 px-5 font-medium text-white transition hover:bg-sky-700"
+            className="h-10 rounded-lg bg-sky-600 px-4 text-sm font-medium text-white transition hover:bg-sky-700"
           >
             Filter
           </button>
@@ -523,11 +622,36 @@ export default async function OrdersPage({
 
           <Link
             href="/admin/orders"
-            className="flex h-11 items-center justify-center rounded-lg border border-neutral-300 px-5 font-medium transition hover:bg-neutral-50"
+            className="flex h-10 items-center justify-center rounded-lg border border-neutral-300 px-4 text-sm font-medium transition hover:bg-neutral-50"
           >
             Clear
           </Link>
+
         </form>
+
+        {/* Date helper */}
+
+        {hasDateFilter && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+
+            <span>
+              Date range:
+            </span>
+
+            {fromDate && (
+              <span className="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700">
+                From: {fromDate}
+              </span>
+            )}
+
+            {toDate && (
+              <span className="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700">
+                To: {toDate}
+              </span>
+            )}
+
+          </div>
+        )}
       </div>
 
       {/* =====================================================
@@ -537,8 +661,11 @@ export default async function OrdersPage({
       {(search ||
         status ||
         payment ||
-        source) && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+        source ||
+        fromDate ||
+        toDate) && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+
           <span className="text-neutral-500">
             Active filters:
           </span>
@@ -546,6 +673,18 @@ export default async function OrdersPage({
           {search && (
             <span className="rounded-full bg-neutral-100 px-3 py-1">
               Search: {search}
+            </span>
+          )}
+
+          {fromDate && (
+            <span className="rounded-full bg-neutral-100 px-3 py-1">
+              From: {fromDate}
+            </span>
+          )}
+
+          {toDate && (
+            <span className="rounded-full bg-neutral-100 px-3 py-1">
+              To: {toDate}
             </span>
           )}
 
@@ -564,12 +703,12 @@ export default async function OrdersPage({
           {source && (
             <span className="rounded-full bg-neutral-100 px-3 py-1">
               Source:{" "}
-              {source ===
-              "store"
+              {source === "store"
                 ? "Store Sale"
                 : "Online Order"}
             </span>
           )}
+
         </div>
       )}
 
@@ -577,54 +716,62 @@ export default async function OrdersPage({
           ORDERS TABLE
       ====================================================== */}
 
-      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-        <div className="border-b px-6 py-5">
-          <h2 className="text-lg font-semibold">
+      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
+
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <h2 className="text-base font-semibold">
             Order List
           </h2>
         </div>
 
         <div className="overflow-x-auto">
+
           <table className="w-full min-w-[1000px]">
-            <thead className="bg-neutral-100">
+
+            <thead className="bg-neutral-50">
+
               <tr>
-                <th className="px-6 py-4 text-left">
+
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Order
                 </th>
 
-                <th className="px-6 py-4 text-left">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Customer
                 </th>
 
-                <th className="px-6 py-4 text-center">
+                <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Source
                 </th>
 
-                <th className="px-6 py-4 text-left">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Date
                 </th>
 
-                <th className="px-6 py-4 text-right">
+                <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Total
                 </th>
 
-                <th className="px-6 py-4 text-center">
+                <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Payment
                 </th>
 
-                <th className="px-6 py-4 text-center">
+                <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Status
                 </th>
 
-                <th className="px-6 py-4 text-center">
+                <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Action
                 </th>
+
               </tr>
             </thead>
 
             <tbody>
+
               {filteredOrders.map(
                 (order) => {
+
                   const orderSource =
                     (order.order_source ||
                       "online") as OrderSource;
@@ -632,12 +779,13 @@ export default async function OrdersPage({
                   return (
                     <tr
                       key={order.id}
-                      className="border-t transition hover:bg-neutral-50"
+                      className="border-t border-neutral-100 transition hover:bg-neutral-50"
                     >
+
                       {/* Order */}
 
-                      <td className="px-6 py-4">
-                        <div className="font-semibold">
+                      <td className="px-4 py-2.5">
+                        <div className="text-sm font-semibold text-neutral-900">
                           #
                           {
                             order.order_number
@@ -647,25 +795,28 @@ export default async function OrdersPage({
 
                       {/* Customer */}
 
-                      <td className="px-6 py-4">
-                        <div className="font-medium">
+                      <td className="px-4 py-2.5">
+
+                        <div className="text-sm font-medium text-neutral-900">
                           {
                             order.customer_name
                           }
                         </div>
 
-                        <div className="mt-1 text-xs text-neutral-500">
+                        <div className="mt-0.5 text-[11px] text-neutral-500">
                           {
                             order.customer_phone
                           }
                         </div>
+
                       </td>
 
                       {/* Source */}
 
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-2.5 text-center">
+
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getSourceBadge(
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${getSourceBadge(
                             orderSource
                           )}`}
                         >
@@ -674,11 +825,12 @@ export default async function OrdersPage({
                             ? "Store Sale"
                             : "Online"}
                         </span>
+
                       </td>
 
                       {/* Date */}
 
-                      <td className="px-6 py-4 text-sm text-neutral-600">
+                      <td className="px-4 py-2.5 text-sm text-neutral-600">
                         {formatDate(
                           order.created_at
                         )}
@@ -686,7 +838,7 @@ export default async function OrdersPage({
 
                       {/* Total */}
 
-                      <td className="px-6 py-4 text-right font-semibold">
+                      <td className="px-4 py-2.5 text-right text-sm font-semibold text-neutral-900">
                         {formatCurrency(
                           getOrderTotal(
                             order
@@ -696,9 +848,10 @@ export default async function OrdersPage({
 
                       {/* Payment */}
 
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-2.5 text-center">
+
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${getPaymentBadge(
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${getPaymentBadge(
                             order.payment_status
                           )}`}
                         >
@@ -707,13 +860,15 @@ export default async function OrdersPage({
                             " "
                           )}
                         </span>
+
                       </td>
 
                       {/* Status */}
 
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-2.5 text-center">
+
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${getOrderBadge(
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${getOrderBadge(
                             order.order_status
                           )}`}
                         >
@@ -721,47 +876,58 @@ export default async function OrdersPage({
                             order.order_status
                           }
                         </span>
+
                       </td>
 
                       {/* Action */}
 
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-2.5 text-center">
+
                         <Link
                           href={`/admin/orders/${order.id}`}
-                          className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-neutral-50"
+                          className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-medium transition hover:bg-neutral-50"
                         >
                           View
 
                           <ArrowRight
-                            size={15}
+                            size={13}
                           />
                         </Link>
+
                       </td>
+
                     </tr>
-                  );
+                  )
                 }
               )}
 
               {filteredOrders.length ===
                 0 && (
                 <tr>
+
                   <td
                     colSpan={8}
-                    className="px-6 py-16 text-center"
+                    className="px-4 py-10 text-center"
                   >
-                    <p className="font-medium text-neutral-700">
+
+                    <p className="text-sm font-medium text-neutral-700">
                       No orders found
                     </p>
 
-                    <p className="mt-1 text-sm text-neutral-500">
-                      Try changing your search
-                      or filters.
+                    <p className="mt-1 text-xs text-neutral-500">
+                      Try changing your search,
+                      date range or filters.
                     </p>
+
                   </td>
+
                 </tr>
               )}
+
             </tbody>
+
           </table>
+
         </div>
 
         {/* =====================================================
@@ -769,44 +935,54 @@ export default async function OrdersPage({
         ====================================================== */}
 
         {totalPages > 1 && (
-          <div className="flex flex-col gap-4 border-t px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-neutral-500">
+          <div className="flex flex-col gap-3 border-t border-neutral-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+
+            <p className="text-xs text-neutral-500">
+
               Showing{" "}
+
               <span className="font-medium text-neutral-900">
                 {from + 1}
-              </span>{" "}
-              to{" "}
+              </span>
+
+              {" "}to{" "}
+
               <span className="font-medium text-neutral-900">
                 {Math.min(
                   from + PAGE_SIZE,
                   totalOrders
                 )}
-              </span>{" "}
-              of{" "}
+              </span>
+
+              {" "}of{" "}
+
               <span className="font-medium text-neutral-900">
                 {totalOrders}
-              </span>{" "}
-              orders
+              </span>
+
+              {" "}orders
+
             </p>
 
             <div className="flex items-center gap-2">
+
               {currentPage > 1 ? (
                 <Link
                   href={buildPageUrl(
                     params,
                     currentPage - 1
                   )}
-                  className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+                  className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium transition hover:bg-neutral-50"
                 >
                   Previous
                 </Link>
               ) : (
-                <span className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm text-neutral-300">
+                <span className="cursor-not-allowed rounded-lg border border-neutral-200 px-3 py-1.5 text-xs text-neutral-300">
                   Previous
                 </span>
               )}
 
-              <span className="rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium">
+              <span className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium">
                 {currentPage} /{" "}
                 {totalPages}
               </span>
@@ -818,19 +994,23 @@ export default async function OrdersPage({
                     params,
                     currentPage + 1
                   )}
-                  className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+                  className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium transition hover:bg-neutral-50"
                 >
                   Next
                 </Link>
               ) : (
-                <span className="cursor-not-allowed rounded-lg border px-4 py-2 text-sm text-neutral-300">
+                <span className="cursor-not-allowed rounded-lg border border-neutral-200 px-3 py-1.5 text-xs text-neutral-300">
                   Next
                 </span>
               )}
+
             </div>
+
           </div>
         )}
+
       </div>
+
     </div>
   );
 }

@@ -51,182 +51,207 @@ export default async function OrderDetailsPage({
     orderTotal - totalCost;
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="space-y-4">
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      {/* =====================================================
+          HEADER
+      ====================================================== */}
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+
         <div>
           <Link
             href="/admin/orders"
-            className="mb-4 inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900"
+            className="mb-2 inline-flex items-center gap-1.5 text-sm text-neutral-500 transition hover:text-neutral-900"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={15} />
             Back to Orders
           </Link>
 
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-950">
             Order #{order.order_number}
           </h1>
 
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-1 text-xs text-neutral-500">
             Created {formatDate(order.created_at)}
           </p>
         </div>
 
-        <div className="flex gap-3">
-          <span className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-medium capitalize">
+        <div className="flex items-center gap-2">
+
+          <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-medium capitalize text-neutral-700">
             {order.order_status}
           </span>
 
-          <span className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-medium capitalize">
+          <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-medium capitalize text-neutral-700">
             {order.payment_status.replace(
               "_",
               " "
             )}
           </span>
+
         </div>
       </div>
 
-      {/* Customer + Delivery */}
+      {/* =====================================================
+          CUSTOMER + DELIVERY
+      ====================================================== */}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
+
         {/* Customer */}
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+
+          <h2 className="text-base font-semibold text-neutral-950">
             Customer Information
           </h2>
 
-          <div className="mt-5 space-y-3 text-sm">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
+
             <div>
-              <p className="text-neutral-500">
+              <p className="text-xs text-neutral-500">
                 Name
               </p>
 
-              <p className="font-medium">
+              <p className="mt-0.5 font-medium text-neutral-900">
                 {order.customer_name}
               </p>
             </div>
 
             <div>
-              <p className="text-neutral-500">
+              <p className="text-xs text-neutral-500">
                 Phone
               </p>
 
-              <p className="font-medium">
+              <p className="mt-0.5 font-medium text-neutral-900">
                 {order.customer_phone}
               </p>
             </div>
 
             {order.customer_email && (
-              <div>
-                <p className="text-neutral-500">
+              <div className="sm:col-span-2">
+                <p className="text-xs text-neutral-500">
                   Email
                 </p>
 
-                <p className="font-medium">
+                <p className="mt-0.5 font-medium text-neutral-900">
                   {order.customer_email}
                 </p>
               </div>
             )}
+
           </div>
         </div>
 
         {/* Delivery */}
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+
+          <h2 className="text-base font-semibold text-neutral-950">
             Delivery Information
           </h2>
 
-          <div className="mt-5 space-y-3 text-sm">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
+
             <div>
-              <p className="text-neutral-500">
+              <p className="text-xs text-neutral-500">
                 Address
               </p>
 
-              <p className="leading-6 text-neutral-700">
+              <p className="mt-0.5 leading-5 text-neutral-700">
                 {order.delivery_address || "-"}
               </p>
             </div>
 
             <div>
-              <p className="text-neutral-500">
+              <p className="text-xs text-neutral-500">
                 District
               </p>
 
-              <p className="font-medium">
+              <p className="mt-0.5 font-medium text-neutral-900">
                 {order.district || "-"}
               </p>
             </div>
+
           </div>
         </div>
       </div>
 
-      {/* Order Items */}
+      {/* =====================================================
+          ORDER ITEMS
+      ====================================================== */}
 
-      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-        <div className="border-b px-6 py-5">
-          <h2 className="text-lg font-semibold">
+      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
+
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <h2 className="text-base font-semibold text-neutral-950">
             Order Items
           </h2>
         </div>
 
         <div className="overflow-x-auto">
+
           <table className="w-full">
-            <thead className="bg-neutral-100">
+
+            <thead className="bg-neutral-50">
               <tr>
-                <th className="px-6 py-4 text-left">
+
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Product
                 </th>
 
-                <th className="px-6 py-4 text-left">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   SKU
                 </th>
 
-                <th className="px-6 py-4 text-right">
+                <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Quantity
                 </th>
 
-                <th className="px-6 py-4 text-right">
+                <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Unit Price
                 </th>
 
-                <th className="px-6 py-4 text-right">
+                <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Subtotal
                 </th>
+
               </tr>
             </thead>
 
             <tbody>
+
               {items.map((item) => (
                 <tr
                   key={item.id}
-                  className="border-t"
+                  className="border-t border-neutral-100 transition hover:bg-neutral-50"
                 >
-                  <td className="px-6 py-4 font-medium">
+
+                  <td className="px-4 py-2.5 text-sm font-medium text-neutral-900">
                     {item.product_name}
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-2.5 text-sm text-neutral-600">
                     {item.sku || "-"}
                   </td>
 
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-4 py-2.5 text-right text-sm text-neutral-700">
                     {item.quantity}
                   </td>
 
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-4 py-2.5 text-right text-sm text-neutral-700">
                     {formatCurrency(
                       Number(item.unit_price)
                     )}
                   </td>
 
-                  <td className="px-6 py-4 text-right font-medium">
+                  <td className="px-4 py-2.5 text-right text-sm font-semibold text-neutral-900">
                     {formatCurrency(
                       Number(item.line_total)
                     )}
                   </td>
+
                 </tr>
               ))}
 
@@ -234,36 +259,42 @@ export default async function OrderDetailsPage({
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-12 text-center text-neutral-500"
+                    className="px-4 py-6 text-center text-sm text-neutral-500"
                   >
                     No items found for this order.
                   </td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Financial Summary */}
+      {/* =====================================================
+          FINANCIAL SUMMARY
+      ====================================================== */}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
+
         {/* Order Summary */}
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+
+          <h2 className="text-base font-semibold text-neutral-950">
             Order Summary
           </h2>
 
-          <div className="mt-5 space-y-4 text-sm">
+          <div className="mt-3 space-y-2.5 text-sm">
+
             {/* Subtotal */}
 
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-neutral-500">
                 Subtotal
               </span>
 
-              <span className="font-medium">
+              <span className="font-medium text-neutral-900">
                 {formatCurrency(
                   Number(order.subtotal)
                 )}
@@ -272,12 +303,12 @@ export default async function OrderDetailsPage({
 
             {/* Discount */}
 
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-neutral-500">
                 Discount
               </span>
 
-              <span className="font-medium">
+              <span className="font-medium text-neutral-900">
                 -{" "}
                 {formatCurrency(
                   Number(
@@ -289,12 +320,12 @@ export default async function OrderDetailsPage({
 
             {/* Delivery */}
 
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-neutral-500">
                 Delivery Charge
               </span>
 
-              <span className="font-medium">
+              <span className="font-medium text-neutral-900">
                 {formatCurrency(
                   Number(
                     order.delivery_charge || 0
@@ -305,56 +336,64 @@ export default async function OrderDetailsPage({
 
             {/* Grand Total */}
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between text-base">
-                <span className="font-semibold">
+            <div className="mt-2 border-t border-neutral-200 pt-3">
+
+              <div className="flex items-center justify-between">
+
+                <span className="font-semibold text-neutral-950">
                   Grand Total
                 </span>
 
-                <span className="font-bold">
+                <span className="text-lg font-bold text-neutral-950">
                   {formatCurrency(orderTotal)}
                 </span>
+
               </div>
             </div>
+
           </div>
         </div>
 
         {/* Profit */}
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+
+          <h2 className="text-base font-semibold text-neutral-950">
             Profit Overview
           </h2>
 
-          <div className="mt-5 space-y-4">
-            <div className="flex justify-between text-sm">
+          <div className="mt-3 space-y-2.5">
+
+            <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-500">
                 Order Revenue
               </span>
 
-              <span className="font-medium">
+              <span className="font-medium text-neutral-900">
                 {formatCurrency(orderTotal)}
               </span>
             </div>
 
-            <div className="flex justify-between text-sm">
+            <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-500">
                 Product Cost
               </span>
 
-              <span className="font-medium">
+              <span className="font-medium text-neutral-900">
                 {formatCurrency(totalCost)}
               </span>
             </div>
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between">
-                <span className="font-semibold">
+            <div className="mt-2 border-t border-neutral-200 pt-3">
+
+              <div className="flex items-center justify-between">
+
+                <span className="font-semibold text-neutral-950">
                   Estimated Profit
                 </span>
 
                 <span
-                  className={`font-bold ${
+                  className={`text-lg font-bold ${
                     estimatedProfit >= 0
                       ? "text-green-600"
                       : "text-red-600"
@@ -364,29 +403,37 @@ export default async function OrderDetailsPage({
                     estimatedProfit
                   )}
                 </span>
+
               </div>
+
             </div>
+
           </div>
         </div>
       </div>
 
-      {/* Payment + Notes */}
+      {/* =====================================================
+          PAYMENT + NOTES
+      ====================================================== */}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
+
         {/* Payment */}
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+
+          <h2 className="text-base font-semibold text-neutral-950">
             Payment
           </h2>
 
-          <div className="mt-5 space-y-3 text-sm">
-            <div className="flex justify-between">
+          <div className="mt-3 space-y-2.5 text-sm">
+
+            <div className="flex items-center justify-between">
               <span className="text-neutral-500">
                 Method
               </span>
 
-              <span className="font-medium capitalize">
+              <span className="font-medium capitalize text-neutral-900">
                 {order.payment_method.replace(
                   "_",
                   " "
@@ -394,23 +441,26 @@ export default async function OrderDetailsPage({
               </span>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-neutral-500">
                 Status
               </span>
 
-              <span className="font-medium capitalize">
+              <span className="font-medium capitalize text-neutral-900">
                 {order.payment_status}
               </span>
             </div>
+
           </div>
         </div>
 
         {/* Notes */}
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">
+
+            <h2 className="text-base font-semibold text-neutral-950">
               Notes
             </h2>
 
@@ -418,13 +468,16 @@ export default async function OrderDetailsPage({
               orderId={order.id}
               currentStatus={order.order_status}
             />
+
           </div>
 
-          <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-5 text-neutral-600">
             {order.notes || "No notes added."}
           </p>
+
         </div>
       </div>
+
     </div>
   );
 }

@@ -447,17 +447,43 @@ export function StoreProductSelector({
         return;
       }
 
-      setSaleItems([]);
+      /*
+       * Store Sale successfully created.
+       *
+       * The existing createOrder() flow remains
+       * unchanged. After successful creation we
+       * redirect to the existing Admin Order Detail
+       * page so the newly created Store Sale can be
+       * viewed immediately.
+       *
+       * The order action is expected to return the
+       * created order ID as `orderId`.
+       */
 
-      setDiscount("0");
+      const orderId =
+        (
+          result as {
+            orderId?: string;
+          }
+        ).orderId;
 
-      setPaymentMethod("cod");
+      if (!orderId) {
+        setError(
+          "Store sale was completed, but the order ID could not be found."
+        );
 
-      setSuccess(
-        "Store sale completed successfully."
+        return;
+      }
+
+      /*
+       * Redirect to the existing order detail page.
+       *
+       * Example:
+       * /admin/orders/063597d9-9381-4b01-8a0d-a9f694df04df
+       */
+      router.push(
+        `/admin/orders/${orderId}`
       );
-
-      router.refresh();
     } catch {
       setError(
         "Something went wrong while completing the sale."

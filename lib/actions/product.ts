@@ -40,7 +40,7 @@ function getProductFormData(
 
     color:
       formData.get("color"),
-      
+
     size:
       formData.get("size"),
 
@@ -51,7 +51,8 @@ function getProductFormData(
       formData.get("regular_price"),
 
     sale_price:
-      formData.get("sale_price") || null,
+      formData.get("sale_price") ||
+      null,
 
     stock_quantity:
       formData.get("stock_quantity"),
@@ -78,6 +79,11 @@ function getProductFormData(
       ),
   };
 }
+
+
+/* =========================================================
+   CREATE PRODUCT
+========================================================= */
 
 export async function createProduct(
   formData: FormData
@@ -154,6 +160,11 @@ export async function createProduct(
   );
 }
 
+
+/* =========================================================
+   UPDATE PRODUCT
+========================================================= */
+
 export async function updateProduct(
   id: string,
   formData: FormData
@@ -181,7 +192,10 @@ export async function updateProduct(
       "slug",
       parsed.data.slug
     )
-    .neq("id", id)
+    .neq(
+      "id",
+      id
+    )
     .maybeSingle();
 
   if (slugExists) {
@@ -200,7 +214,10 @@ export async function updateProduct(
         "sku",
         parsed.data.sku
       )
-      .neq("id", id)
+      .neq(
+        "id",
+        id
+      )
       .maybeSingle();
 
     if (skuExists) {
@@ -238,4 +255,192 @@ export async function updateProduct(
   redirect(
     "/admin/products"
   );
+}
+
+
+/* =========================================================
+   DELETE PRODUCT
+========================================================= */
+
+export async function deleteProduct(
+  productId: string
+) {
+  const supabase =
+    await createClient();
+
+  if (!productId) {
+    return {
+      success: false,
+      error:
+        "Product ID is required.",
+    };
+  }
+
+  /* -----------------------------------------
+     1. Check product exists
+  ----------------------------------------- */
+
+  const {
+    data: product,
+    error: productError,
+  } =
+    await supabase
+      .from("products")
+      .select(
+        "id, name"
+      )
+      .eq(
+        "id",
+        productId
+      )
+      .maybeSingle();
+
+  if (productError) {
+    return {
+      success: false,
+      error:
+        productError.message,
+    };
+  }
+
+  if (!product) {
+    return {
+      success: false,
+      error:
+        "Product not found.",
+    };
+  }
+
+  /* -----------------------------------------
+     2. Delete product images from Storage
+
+     Images are stored inside:
+
+     product-images/
+       productId/
+         image files...
+
+     We list the folder directly instead
+     of depending on storage_path in DB.
+
+     This also cleans old images that were
+     uploaded before storage_path existed.
+  ----------------------------------------- */
+
+  const {
+    data: storageFiles,
+    error: listError,
+  } =
+    await supabase.storage
+      .from(
+        "product-images"
+      )
+      .list(
+        productId
+      );
+
+  if (listError) {
+    return {
+      success: false,
+      error:
+        `Unable to access product images: ${listError.message}`,
+    };
+  }
+
+  if (
+    storageFiles &&
+    storageFiles.length > 0
+  ) {
+    const storagePaths =
+      storageFiles
+        .filter(
+          (file) =>
+            file.name
+        )
+        .map(
+          (file) =>
+            `${productId}/${file.name}`
+        );
+
+    if (
+      storagePaths.length > 0
+    ) {
+      const {
+        error: storageDeleteError,
+      } =
+        await supabase.storage
+          .from(
+            "product-images"
+          )
+          .remove(
+            storagePaths
+          );
+
+      if (
+        storageDeleteError
+      ) {
+        return {
+          success: false,
+          error:
+            `Unable to delete product images: ${storageDeleteError.message}`,
+        };
+      }
+    }
+  }
+
+  /* -----------------------------------------
+     3. Delete product
+
+     product_images:
+     ON DELETE CASCADE
+
+     order_items:
+     ON DELETE SET NULL
+
+     Therefore historical orders remain
+     safe after product deletion.
+  ----------------------------------------- */
+
+  const {
+    error: deleteError,
+  } =
+    await supabase
+      .from("products")
+      .delete()
+      .eq(
+        "id",
+        productId
+      );
+
+  if (deleteError) {
+    return {
+      success: false,
+      error:
+        deleteError.message,
+    };
+  }
+
+  /* -----------------------------------------
+     4. Revalidate affected pages
+  ----------------------------------------- */
+
+  revalidatePath(
+    "/admin/products"
+  );
+
+  revalidatePath(
+    "/admin/dashboard"
+  );
+
+  revalidatePath(
+    "/admin/orders"
+  );
+
+  revalidatePath(
+    "/admin/store-selling"
+  );
+
+  return {
+    success: true,
+  };
 }

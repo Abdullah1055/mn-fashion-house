@@ -1,11 +1,9 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { getProductById } from "@/lib/services/product.service";
 import { getProductImages } from "@/lib/services/product-image.service";
 
-import { ProductImageGallery } from "@/components/product/product-image-gallery";
+import { ProductImageManager } from "@/components/product/product-image-manager";
 
 export default async function ProductImageGalleryPage({
   params,
@@ -25,29 +23,25 @@ export default async function ProductImageGalleryPage({
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <Link
-          href={`/admin/products/${product.id}/images`}
-          className="inline-flex items-center gap-2 text-sm text-neutral-500 transition hover:text-neutral-900"
-        >
-          <ArrowLeft size={16} />
-          Back to Product Images
-        </Link>
+    <div className="space-y-6">
+      {/* Header */}
 
-        <h1 className="mt-4 text-3xl font-bold">
-          Product Gallery
+      <div>
+        <h1 className="text-3xl font-extrabold text-neutral-950">
+          Product Images
         </h1>
 
-        <p className="mt-2 text-neutral-500">
-          Gallery for{" "}
-          <span className="font-medium text-neutral-900">
+        <p className="mt-1 text-sm text-neutral-500">
+          Manage images for{" "}
+          <span className="font-semibold text-neutral-900">
             {product.name}
           </span>
         </p>
       </div>
 
-      <ProductImageGallery
+      {/* Image Management */}
+
+      <ProductImageManager
         productId={product.id}
         images={images}
       />

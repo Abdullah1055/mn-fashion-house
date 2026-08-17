@@ -48,6 +48,16 @@ export function StoreProductSelector({
     useState<string | null>(null);
 
   /* =========================================================
+     PAGINATION
+  ========================================================= */
+
+  const [currentPage, setCurrentPage] =
+    useState(1);
+
+  const [pageSize, setPageSize] =
+    useState(5);
+
+  /* =========================================================
      CATEGORIES
   ========================================================= */
 
@@ -151,6 +161,106 @@ export function StoreProductSelector({
     ]);
 
   /* =========================================================
+     PAGINATION CALCULATIONS
+  ========================================================= */
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      filteredProducts.length /
+        pageSize
+    )
+  );
+
+  /*
+   * Make sure current page never
+   * goes beyond available pages.
+   */
+  const safeCurrentPage = Math.min(
+    currentPage,
+    totalPages
+  );
+
+  const startIndex =
+    (safeCurrentPage - 1) *
+    pageSize;
+
+  const endIndex =
+    startIndex + pageSize;
+
+  const paginatedProducts =
+    filteredProducts.slice(
+      startIndex,
+      endIndex
+    );
+
+  const showingFrom =
+    filteredProducts.length === 0
+      ? 0
+      : startIndex + 1;
+
+  const showingTo =
+    Math.min(
+      endIndex,
+      filteredProducts.length
+    );
+
+  /* =========================================================
+     PAGINATION HANDLERS
+  ========================================================= */
+
+  function changePage(
+    page: number
+  ) {
+    const nextPage = Math.min(
+      Math.max(page, 1),
+      totalPages
+    );
+
+    setCurrentPage(nextPage);
+  }
+
+  function changePageSize(
+    value: number
+  ) {
+    setPageSize(value);
+    setCurrentPage(1);
+  }
+
+  /* =========================================================
+     SEARCH HANDLER
+  ========================================================= */
+
+  function handleSearchChange(
+    value: string
+  ) {
+    setSearch(value);
+    setCurrentPage(1);
+  }
+
+  /* =========================================================
+     CATEGORY HANDLER
+  ========================================================= */
+
+  function handleCategoryChange(
+    value: string
+  ) {
+    setCategory(value);
+    setCurrentPage(1);
+  }
+
+  /* =========================================================
+     SIZE HANDLER
+  ========================================================= */
+
+  function handleSizeChange(
+    value: string
+  ) {
+    setSize(value);
+    setCurrentPage(1);
+  }
+
+  /* =========================================================
      CLEAR FILTERS
   ========================================================= */
 
@@ -158,6 +268,7 @@ export function StoreProductSelector({
     setSearch("");
     setCategory("");
     setSize("");
+    setCurrentPage(1);
   }
 
   /* =========================================================
@@ -455,9 +566,6 @@ export function StoreProductSelector({
        * redirect to the existing Admin Order Detail
        * page so the newly created Store Sale can be
        * viewed immediately.
-       *
-       * The order action is expected to return the
-       * created order ID as `orderId`.
        */
 
       const orderId =
@@ -477,10 +585,8 @@ export function StoreProductSelector({
 
       /*
        * Redirect to the existing order detail page.
-       *
-       * Example:
-       * /admin/orders/063597d9-9381-4b01-8a0d-a9f694df04df
        */
+
       router.push(
         `/admin/orders/${orderId}`
       );
@@ -515,7 +621,7 @@ export function StoreProductSelector({
             type="search"
             value={search}
             onChange={(event) =>
-              setSearch(
+              handleSearchChange(
                 event.target.value
               )
             }
@@ -536,7 +642,7 @@ export function StoreProductSelector({
             id="store-category"
             value={category}
             onChange={(event) =>
-              setCategory(
+              handleCategoryChange(
                 event.target.value
               )
             }
@@ -571,7 +677,7 @@ export function StoreProductSelector({
             id="store-size"
             value={size}
             onChange={(event) =>
-              setSize(
+              handleSizeChange(
                 event.target.value
               )
             }
@@ -604,45 +710,48 @@ export function StoreProductSelector({
         <div className="overflow-hidden rounded-xl border border-neutral-300">
 
           <div className="overflow-x-auto">
+
             <table className="w-full min-w-[900px]">
 
               <thead className="bg-neutral-50">
+
                 <tr>
 
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-black-500">
                     Product
                   </th>
 
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-black-500">
                     Category
                   </th>
 
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-black-500">
                     Color
                   </th>
 
-                  <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wide text-black-500">
                     Size
                   </th>
 
-                  <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wide text-black-500">
                     Available
                   </th>
 
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-black-500">
                     Sale Price
                   </th>
 
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-black-500">
                     Action
                   </th>
 
                 </tr>
+
               </thead>
 
               <tbody>
 
-                {filteredProducts.map(
+                {paginatedProducts.map(
                   (product) => {
 
                     const stock =
@@ -670,6 +779,7 @@ export function StoreProductSelector({
                       >
 
                         <td className="px-4 py-1.5">
+
                           <div className="text-sm font-medium text-neutral-900">
                             {product.name}
                           </div>
@@ -679,6 +789,7 @@ export function StoreProductSelector({
                             {product.sku ||
                               "-"}
                           </div>
+
                         </td>
 
                         <td className="px-4 py-1.5 text-sm text-neutral-600">
@@ -698,6 +809,7 @@ export function StoreProductSelector({
                         </td>
 
                         <td className="px-4 py-1.5 text-center">
+
                           <span
                             className={
                               stock === 0
@@ -710,9 +822,11 @@ export function StoreProductSelector({
                           >
                             {stock}
                           </span>
+
                         </td>
 
                         <td className="px-4 py-1.5 text-right text-sm font-semibold text-neutral-900">
+
                           ৳
                           {price.toLocaleString(
                             "en-BD",
@@ -723,9 +837,11 @@ export function StoreProductSelector({
                                 2,
                             }
                           )}
+
                         </td>
 
                         <td className="px-4 py-1.5 text-right">
+
                           <button
                             type="button"
                             disabled={
@@ -742,6 +858,7 @@ export function StoreProductSelector({
                               ? "Add More"
                               : "Select"}
                           </button>
+
                         </td>
 
                       </tr>
@@ -752,10 +869,12 @@ export function StoreProductSelector({
                 {filteredProducts.length ===
                   0 && (
                   <tr>
+
                     <td
                       colSpan={7}
                       className="px-5 py-8 text-center"
                     >
+
                       <p className="font-medium text-neutral-700">
                         No products found
                       </p>
@@ -764,34 +883,177 @@ export function StoreProductSelector({
                         Try a different product
                         name, SKU, category or size.
                       </p>
+
                     </td>
+
                   </tr>
                 )}
 
               </tbody>
+
             </table>
+
           </div>
 
           {/* =================================================
-              TABLE FOOTER
+              PAGINATION FOOTER
           ================================================== */}
 
           <div className="border-t border-neutral-200 bg-neutral-50 px-4 py-2.5">
-            <div className="flex items-center justify-start">
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+              {/* Showing */}
 
               <p className="text-sm text-neutral-500">
+
                 Showing{" "}
+
+                <span className="font-semibold text-neutral-900">
+                  {showingFrom}
+                </span>
+
+                {" "}–{" "}
+
+                <span className="font-semibold text-neutral-900">
+                  {showingTo}
+                </span>
+
+                {" "}of{" "}
+
                 <span className="font-semibold text-neutral-900">
                   {filteredProducts.length}
-                </span>{" "}
-                of{" "}
-                <span className="font-semibold text-neutral-900">
-                  {products.length}
-                </span>{" "}
-                products
+                </span>
+
+                {" "}products
+
               </p>
 
+              {/* Page Size + Navigation */}
+
+              {filteredProducts.length >
+                0 && (
+                <div className="flex flex-wrap items-center justify-end gap-2">
+
+                  {/* Rows per page */}
+
+                  <div className="flex items-center gap-1.5">
+
+                    <span className="text-xs text-neutral-500">
+                      Show
+                    </span>
+
+                    <select
+                      value={pageSize}
+                      onChange={(
+                        event
+                      ) =>
+                        changePageSize(
+                          Number(
+                            event.target
+                              .value
+                          )
+                        )
+                      }
+                      className="h-8 rounded-md border border-neutral-300 bg-white px-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                    >
+                      <option value={5}>
+                        5
+                      </option>
+
+                      <option value={10}>
+                        10
+                      </option>
+
+                      <option value={25}>
+                        25
+                      </option>
+
+                      <option value={50}>
+                        50
+                      </option>
+                    </select>
+
+                  </div>
+
+                  {/* Navigation */}
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          changePage(
+                            safeCurrentPage -
+                              1
+                          )
+                        }
+                        disabled={
+                          safeCurrentPage ===
+                          1
+                        }
+                        className="h-8 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-700 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Previous
+                      </button>
+
+                      {/* PAGE NUMBERS */}
+
+                      {Array.from(
+                        {
+                          length:
+                            totalPages,
+                        },
+                        (_, index) =>
+                          index + 1
+                      ).map(
+                        (page) => (
+                          <button
+                            key={page}
+                            type="button"
+                            onClick={() =>
+                              changePage(
+                                page
+                              )
+                            }
+                            className={
+                              page ===
+                              safeCurrentPage
+                                ? "h-8 min-w-8 rounded-md bg-sky-600 px-2 text-xs font-semibold text-white"
+                                : "h-8 min-w-8 rounded-md border border-neutral-300 bg-white px-2 text-xs font-medium text-neutral-700 transition hover:bg-neutral-100"
+                            }
+                          >
+                            {page}
+                          </button>
+                        )
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          changePage(
+                            safeCurrentPage +
+                              1
+                          )
+                        }
+                        disabled={
+                          safeCurrentPage ===
+                          totalPages
+                        }
+                        className="h-8 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-700 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+
+                    </div>
+                  )}
+
+                </div>
+              )}
+
             </div>
+
           </div>
 
         </div>
@@ -802,6 +1064,7 @@ export function StoreProductSelector({
           category ||
           size) && (
           <div className="mt-2 flex justify-end">
+
             <button
               type="button"
               onClick={clearFilters}
@@ -809,6 +1072,7 @@ export function StoreProductSelector({
             >
               Clear filters
             </button>
+
           </div>
         )}
 
@@ -850,6 +1114,7 @@ export function StoreProductSelector({
             <table className="w-full min-w-[850px]">
 
               <thead className="bg-neutral-50">
+
                 <tr>
 
                   <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
@@ -879,6 +1144,7 @@ export function StoreProductSelector({
                   <th className="px-4 py-2" />
 
                 </tr>
+
               </thead>
 
               <tbody>
@@ -907,6 +1173,7 @@ export function StoreProductSelector({
                       >
 
                         <td className="px-4 py-1.5">
+
                           <div className="text-sm font-medium text-neutral-900">
                             {
                               item.product
@@ -920,6 +1187,7 @@ export function StoreProductSelector({
                               .sku ||
                               "-"}
                           </div>
+
                         </td>
 
                         <td className="px-4 py-1.5 text-sm text-neutral-600">
@@ -935,6 +1203,7 @@ export function StoreProductSelector({
                         </td>
 
                         <td className="px-4 py-1.5 text-right text-sm font-medium">
+
                           ৳
                           {price.toLocaleString(
                             "en-BD",
@@ -945,6 +1214,7 @@ export function StoreProductSelector({
                                 2,
                             }
                           )}
+
                         </td>
 
                         <td className="px-4 py-1.5">
@@ -1001,6 +1271,7 @@ export function StoreProductSelector({
                         </td>
 
                         <td className="px-4 py-1.5 text-right text-sm font-semibold">
+
                           ৳
                           {total.toLocaleString(
                             "en-BD",
@@ -1011,6 +1282,7 @@ export function StoreProductSelector({
                                 2,
                             }
                           )}
+
                         </td>
 
                         <td className="px-4 py-1.5 text-right">
@@ -1036,6 +1308,7 @@ export function StoreProductSelector({
                 )}
 
               </tbody>
+
             </table>
 
           </div>
@@ -1057,6 +1330,7 @@ export function StoreProductSelector({
                 </span>
 
                 <span className="text-sm font-semibold text-neutral-900">
+
                   ৳
                   {subtotal.toLocaleString(
                     "en-BD",
@@ -1067,6 +1341,7 @@ export function StoreProductSelector({
                         2,
                     }
                   )}
+
                 </span>
 
               </div>
@@ -1119,9 +1394,11 @@ export function StoreProductSelector({
                   }
                   className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                 >
+
                   <option value="cod">
                     Cash
                   </option>
+
                 </select>
 
               </div>
@@ -1137,6 +1414,7 @@ export function StoreProductSelector({
                   </span>
 
                   <span className="text-xl font-black text-neutral-950">
+
                     ৳
                     {grandTotal.toLocaleString(
                       "en-BD",
@@ -1147,6 +1425,7 @@ export function StoreProductSelector({
                           2,
                       }
                     )}
+
                   </span>
 
                 </div>

@@ -1,53 +1,102 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Category } from "@/types/category";
 
-export async function getCategories(): Promise<Category[]> {
-  const supabase = await createClient();
+export type StoreCategory = {
+  id: string;
+  name: string;
+  slug: string;
+};
 
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .order("sort_order", { ascending: true });
+/* =========================================================
+   GET ALL CATEGORIES
+   Used by Admin Categories page
+========================================================= */
+
+export async function getCategories(): Promise<
+  StoreCategory[]
+> {
+  const supabase =
+    await createClient();
+
+  const { data, error } =
+    await supabase
+      .from("categories")
+      .select(
+        "id, name, slug, is_active"
+      )
+      .order("name", {
+        ascending: true,
+      });
 
   if (error) {
     throw error;
   }
 
-  return data as Category[];
+  return (data ?? []) as StoreCategory[];
 }
+
+/* =========================================================
+   GET ACTIVE CATEGORIES
+   Used by Product Create/Edit
+========================================================= */
+
+export async function getActiveCategories(): Promise<
+  StoreCategory[]
+> {
+  const supabase =
+    await createClient();
+
+  const { data, error } =
+    await supabase
+      .from("categories")
+      .select(
+        "id, name, slug, is_active"
+      )
+      .eq("is_active", true)
+      .order("name", {
+        ascending: true,
+      });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as StoreCategory[];
+}
+
+/* =========================================================
+   GET CATEGORY BY ID
+   Used by Admin Category Edit
+========================================================= */
 
 export async function getCategoryById(
   id: string
-): Promise<Category | null> {
-  const supabase = await createClient();
+): Promise<StoreCategory | null> {
+  const supabase =
+    await createClient();
 
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    return null;
-  }
-
-  return data as Category;
-}
-
-export async function getActiveCategories() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("categories")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("sort_order", {
-      ascending: true,
-    });
+  const { data, error } =
+    await supabase
+      .from("categories")
+      .select(
+        "id, name, slug, is_active"
+      )
+      .eq("id", id)
+      .maybeSingle();
 
   if (error) {
     throw error;
   }
 
-  return data;
+  return data as StoreCategory | null;
+}
+
+/* =========================================================
+   GET ACTIVE STORE CATEGORIES
+   Used by Customer Homepage
+========================================================= */
+
+export async function getStoreCategories(): Promise<
+  StoreCategory[]
+> {
+  return getActiveCategories();
 }

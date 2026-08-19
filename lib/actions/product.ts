@@ -6,6 +6,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { productSchema } from "@/schemas/product-schema";
 
+type VariantFormItem = {
+  id?: string;
+  color: string;
+  size: string;
+  stock_quantity: number;
+  sku: string;
+};
+
 function getProductFormData(
   formData: FormData
 ) {
@@ -38,11 +46,20 @@ function getProductFormData(
     sku:
       formData.get("sku"),
 
+    /*
+     * Legacy fields are intentionally
+     * kept only because the existing
+     * product schema/database still
+     * contains them.
+     *
+     * New inventory logic does NOT
+     * use these values.
+     */
     color:
-      formData.get("color"),
+      "",
 
     size:
-      formData.get("size"),
+      "",
 
     purchase_cost:
       formData.get("purchase_cost"),
@@ -55,7 +72,8 @@ function getProductFormData(
       null,
 
     stock_quantity:
-      formData.get("stock_quantity"),
+      formData.get("stock_quantity") ||
+      0,
 
     low_stock_threshold:
       formData.get(
@@ -80,6 +98,196 @@ function getProductFormData(
   };
 }
 
+function getVariantsFromFormData(
+  formData: FormData
+): VariantFormItem[] {
+  const raw =
+    String(
+      formData.get(
+        "variant_data"
+      ) || "[]"
+    );
+
+  try {
+    const parsed =
+      JSON.parse(raw);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((item) => ({
+        id:
+          typeof item?.id ===
+          "string"
+            ? item.id
+            : undefined,
+
+        color:
+          String(
+            item?.color || ""
+          ).trim(),
+
+        size:
+          String(
+            item?.size || ""
+          ).trim(),
+
+        stock_quantity:
+          Number(
+            item?.stock_quantity ||
+              0
+          ),
+
+        sku:
+          String(
+            item?.sku || ""
+          ).trim(),
+      }))
+      .filter(
+        (variant) =>
+          variant.color &&
+          variant.size &&
+          Number.isInteger(
+            variant.stock_quantity
+          ) &&
+          variant.stock_quantity >=
+            0
+      );
+  } catch {
+    throw new Error(
+      "Invalid product variant data."
+    );
+  }
+}
+
+function validateVariants(
+  variants: VariantFormItem[]
+) {
+  const combinations =
+    new Set<string>();
+
+  const skus =
+    new Set<string>();
+
+  for (const variant of variants) {
+    const color =
+      variant.color
+        .trim()
+        .toLowerCase();
+
+    const size =
+      variant.size
+        .trim()
+        .toLowerCase();
+
+    const combination =
+      `${color}::${size}`;
+
+    if (
+      combinations.has(
+        combination
+      )
+    ) {
+      throw new Error(
+        `Duplicate variant: ${variant.color} / ${variant.size}.`
+      );
+    }
+
+    combinations.add(
+      combination
+    );
+
+    if (variant.sku) {
+      const sku =
+        variant.sku
+          .trim()
+          .toLowerCase();
+
+      if (skus.has(sku)) {
+        throw new Error(
+          `Duplicate variant SKU: ${variant.sku}.`
+        );
+      }
+
+      skus.add(sku);
+    }
+  }
+}
+
+function calculateTotalStock(
+  variants: VariantFormItem[]
+) {
+  return variants.reduce(
+    (total, variant) =>
+      total +
+      Number(
+        variant.stock_quantity
+      ),
+    0
+  );
+}
+
+async function checkVariantSkus(
+  supabase: Awaited<
+    ReturnType<typeof createClient>
+  >,
+  variants: VariantFormItem[],
+  productId?: string
+) {
+  const skuValues =
+    variants
+      .map((variant) =>
+        variant.sku.trim()
+      )
+      .filter(Boolean);
+
+  if (
+    skuValues.length === 0
+  ) {
+    return;
+  }
+
+  const { data, error } =
+    await supabase
+      .from("product_variants")
+      .select("id, sku")
+      .in(
+        "sku",
+        skuValues
+      );
+
+  if (error) {
+    throw new Error(
+      error.message
+    );
+  }
+
+  const currentIds =
+    new Set(
+      variants
+        .map(
+          (variant) =>
+            variant.id
+        )
+        .filter(Boolean)
+    );
+
+  const conflicting =
+    (data ?? []).find(
+      (item) =>
+        !currentIds.has(
+          item.id
+        )
+    );
+
+  if (conflicting) {
+    throw new Error(
+      `Variant SKU already exists: ${conflicting.sku}.`
+    );
+  }
+}
 
 /* =========================================================
    CREATE PRODUCT
@@ -93,7 +301,9 @@ export async function createProduct(
 
   const parsed =
     productSchema.safeParse(
-      getProductFormData(formData)
+      getProductFormData(
+        formData
+      )
     );
 
   if (!parsed.success) {
@@ -101,6 +311,28 @@ export async function createProduct(
       "Invalid product data."
     );
   }
+
+  const variants =
+    getVariantsFromFormData(
+      formData
+    );
+
+  validateVariants(
+    variants
+  );
+
+  if (
+    variants.length === 0
+  ) {
+    throw new Error(
+      "Please add at least one product variant."
+    );
+  }
+
+  const totalStock =
+    calculateTotalStock(
+      variants
+    );
 
   const {
     data: slugExists,
@@ -138,16 +370,121 @@ export async function createProduct(
     }
   }
 
-  const { error } =
+  await checkVariantSkus(
+    supabase,
+    variants
+  );
+
+  /*
+   * Product-level stock is now
+   * calculated from variants.
+   */
+  const productData = {
+    ...parsed.data,
+    stock_quantity:
+      totalStock,
+    color: null,
+    size: null,
+  };
+
+  const {
+    data: product,
+    error: productError,
+  } =
     await supabase
       .from("products")
       .insert(
-        parsed.data
+        productData
+      )
+      .select("id")
+      .single();
+
+  if (productError) {
+    throw new Error(
+      productError.message
+    );
+  }
+
+  /*
+   * Existing product_variants table
+   * only uses:
+   *
+   * product_id
+   * sku
+   * color
+   * size
+   * price
+   * discount_price
+   * stock_quantity
+   * barcode
+   *
+   * Price comes from the product.
+   */
+  const variantRows =
+    variants.map(
+      (variant) => ({
+        product_id:
+          product.id,
+
+        sku:
+          variant.sku ||
+          null,
+
+        color:
+          variant.color,
+
+        size:
+          variant.size,
+
+        price:
+          Number(
+            parsed.data
+              .regular_price
+          ),
+
+        discount_price:
+          parsed.data
+            .sale_price !==
+          null
+            ? Number(
+                parsed.data
+                  .sale_price
+              )
+            : null,
+
+        stock_quantity:
+          variant.stock_quantity,
+
+        barcode: null,
+      })
+    );
+
+  const {
+    error: variantError,
+  } =
+    await supabase
+      .from(
+        "product_variants"
+      )
+      .insert(
+        variantRows
       );
 
-  if (error) {
+  if (variantError) {
+    /*
+     * Roll back the product if
+     * variant insertion fails.
+     */
+    await supabase
+      .from("products")
+      .delete()
+      .eq(
+        "id",
+        product.id
+      );
+
     throw new Error(
-      error.message
+      variantError.message
     );
   }
 
@@ -155,11 +492,14 @@ export async function createProduct(
     "/admin/products"
   );
 
+  revalidatePath(
+    "/"
+  );
+
   redirect(
     "/admin/products"
   );
 }
-
 
 /* =========================================================
    UPDATE PRODUCT
@@ -172,9 +512,17 @@ export async function updateProduct(
   const supabase =
     await createClient();
 
+  if (!id) {
+    throw new Error(
+      "Product ID is required."
+    );
+  }
+
   const parsed =
     productSchema.safeParse(
-      getProductFormData(formData)
+      getProductFormData(
+        formData
+      )
     );
 
   if (!parsed.success) {
@@ -182,6 +530,28 @@ export async function updateProduct(
       "Invalid product data."
     );
   }
+
+  const variants =
+    getVariantsFromFormData(
+      formData
+    );
+
+  validateVariants(
+    variants
+  );
+
+  if (
+    variants.length === 0
+  ) {
+    throw new Error(
+      "Please add at least one product variant."
+    );
+  }
+
+  const totalStock =
+    calculateTotalStock(
+      variants
+    );
 
   const {
     data: slugExists,
@@ -227,12 +597,25 @@ export async function updateProduct(
     }
   }
 
+  await checkVariantSkus(
+    supabase,
+    variants,
+    id
+  );
+
+  /*
+   * Update product.
+   */
   const { error } =
     await supabase
       .from("products")
-      .update(
-        parsed.data
-      )
+      .update({
+        ...parsed.data,
+        stock_quantity:
+          totalStock,
+        color: null,
+        size: null,
+      })
       .eq(
         "id",
         id
@@ -244,6 +627,196 @@ export async function updateProduct(
     );
   }
 
+  /*
+   * Existing variants are synchronized
+   * without touching product data.
+   *
+   * Existing variant IDs are updated.
+   * New variants are inserted.
+   */
+  const existingIds =
+    variants
+      .map(
+        (variant) =>
+          variant.id
+      )
+      .filter(
+        (
+          value
+        ): value is string =>
+          Boolean(value)
+      );
+
+  const {
+    data: currentVariants,
+    error:
+      currentVariantsError,
+  } =
+    await supabase
+      .from(
+        "product_variants"
+      )
+      .select(
+        "id"
+      )
+      .eq(
+        "product_id",
+        id
+      );
+
+  if (
+    currentVariantsError
+  ) {
+    throw new Error(
+      currentVariantsError.message
+    );
+  }
+
+  const submittedIdSet =
+    new Set(
+      existingIds
+    );
+
+  /*
+   * Remove variants that were
+   * deleted from the form.
+   */
+  const variantsToDelete =
+    (currentVariants ?? [])
+      .map(
+        (variant) =>
+          variant.id
+      )
+      .filter(
+        (variantId) =>
+          !submittedIdSet.has(
+            variantId
+          )
+      );
+
+  if (
+    variantsToDelete.length >
+    0
+  ) {
+    const {
+      error:
+        deleteVariantsError,
+    } =
+      await supabase
+        .from(
+          "product_variants"
+        )
+        .delete()
+        .in(
+          "id",
+          variantsToDelete
+        )
+        .eq(
+          "product_id",
+          id
+        );
+
+    if (
+      deleteVariantsError
+    ) {
+      throw new Error(
+        deleteVariantsError.message
+      );
+    }
+  }
+
+  /*
+   * Update / insert variants.
+   */
+  for (
+    const variant of variants
+  ) {
+    const variantData = {
+      sku:
+        variant.sku ||
+        null,
+
+      color:
+        variant.color,
+
+      size:
+        variant.size,
+
+      price:
+        Number(
+          parsed.data
+            .regular_price
+        ),
+
+      discount_price:
+        parsed.data
+          .sale_price !==
+        null
+          ? Number(
+              parsed.data
+                .sale_price
+            )
+          : null,
+
+      stock_quantity:
+        variant.stock_quantity,
+
+      barcode: null,
+    };
+
+    if (variant.id) {
+      const {
+        error:
+          updateVariantError,
+      } =
+        await supabase
+          .from(
+            "product_variants"
+          )
+          .update(
+            variantData
+          )
+          .eq(
+            "id",
+            variant.id
+          )
+          .eq(
+            "product_id",
+            id
+          );
+
+      if (
+        updateVariantError
+      ) {
+        throw new Error(
+          updateVariantError.message
+        );
+      }
+    } else {
+      const {
+        error:
+          insertVariantError,
+      } =
+        await supabase
+          .from(
+            "product_variants"
+          )
+          .insert({
+            product_id:
+              id,
+            ...variantData,
+          });
+
+      if (
+        insertVariantError
+      ) {
+        throw new Error(
+          insertVariantError.message
+        );
+      }
+    }
+  }
+
   revalidatePath(
     "/admin/products"
   );
@@ -252,11 +825,14 @@ export async function updateProduct(
     `/admin/products/${id}`
   );
 
+  revalidatePath(
+    "/"
+  );
+
   redirect(
     "/admin/products"
   );
 }
-
 
 /* =========================================================
    DELETE PRODUCT
@@ -275,10 +851,6 @@ export async function deleteProduct(
         "Product ID is required.",
     };
   }
-
-  /* -----------------------------------------
-     1. Check product exists
-  ----------------------------------------- */
 
   const {
     data: product,
@@ -310,22 +882,6 @@ export async function deleteProduct(
         "Product not found.",
     };
   }
-
-  /* -----------------------------------------
-     2. Delete product images from Storage
-
-     Images are stored inside:
-
-     product-images/
-       productId/
-         image files...
-
-     We list the folder directly instead
-     of depending on storage_path in DB.
-
-     This also cleans old images that were
-     uploaded before storage_path existed.
-  ----------------------------------------- */
 
   const {
     data: storageFiles,
@@ -366,7 +922,8 @@ export async function deleteProduct(
       storagePaths.length > 0
     ) {
       const {
-        error: storageDeleteError,
+        error:
+          storageDeleteError,
       } =
         await supabase.storage
           .from(
@@ -388,19 +945,6 @@ export async function deleteProduct(
     }
   }
 
-  /* -----------------------------------------
-     3. Delete product
-
-     product_images:
-     ON DELETE CASCADE
-
-     order_items:
-     ON DELETE SET NULL
-
-     Therefore historical orders remain
-     safe after product deletion.
-  ----------------------------------------- */
-
   const {
     error: deleteError,
   } =
@@ -420,10 +964,6 @@ export async function deleteProduct(
     };
   }
 
-  /* -----------------------------------------
-     4. Revalidate affected pages
-  ----------------------------------------- */
-
   revalidatePath(
     "/admin/products"
   );
@@ -438,6 +978,10 @@ export async function deleteProduct(
 
   revalidatePath(
     "/admin/store-selling"
+  );
+
+  revalidatePath(
+    "/"
   );
 
   return {

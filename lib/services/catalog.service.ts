@@ -4,43 +4,23 @@ import { getProducts } from "@/lib/services/product.service";
 import { getActiveCategories } from "@/lib/services/category.service";
 import { getBrands } from "@/lib/services/brand.service";
 import { getProductImages } from "@/lib/services/product-image.service";
-import { getProductOfferByProductId } from "@/lib/services/product-offer.service";
 
 export type CatalogProduct = {
   id: string;
   name: string;
   slug: string;
   short_description: string | null;
-
   regular_price: number;
   sale_price: number | null;
-
   stock_quantity: number;
-
   is_featured: boolean;
   is_active: boolean;
-
   category_id: string;
   brand_id: string | null;
-
   category_name: string | null;
   brand_name: string | null;
-
   image_url: string | null;
-
-  size: string | null;
-  color: string | null;
-
-  offer: {
-    id: string;
-    discount_percentage: number;
-    is_active: boolean;
-  } | null;
 };
-
-/* =========================================================
-   GET ALL CUSTOMER CATALOG PRODUCTS
-========================================================= */
 
 export async function getCatalogProducts(): Promise<
   CatalogProduct[]
@@ -55,25 +35,19 @@ export async function getCatalogProducts(): Promise<
     getBrands(),
   ]);
 
-  const categoryMap =
-    new Map(
-      categories.map(
-        (category) => [
-          category.id,
-          category.name,
-        ]
-      )
-    );
+  const categoryMap = new Map(
+    categories.map((category) => [
+      category.id,
+      category.name,
+    ])
+  );
 
-  const brandMap =
-    new Map(
-      brands.map(
-        (brand) => [
-          brand.id,
-          brand.name,
-        ]
-      )
-    );
+  const brandMap = new Map(
+    brands.map((brand) => [
+      brand.id,
+      brand.name,
+    ])
+  );
 
   const catalogProducts =
     await Promise.all(
@@ -82,114 +56,79 @@ export async function getCatalogProducts(): Promise<
           (product) =>
             product.is_active
         )
-        .map(
-          async (product) => {
-            const [
-              images,
-              offer,
-            ] = await Promise.all([
-              getProductImages(
-                product.id
+        .map(async (product) => {
+          const images =
+            await getProductImages(
+              product.id
+            );
+
+          const primaryImage =
+            images.find(
+              (image) =>
+                image.is_primary
+            ) ||
+            images[0] ||
+            null;
+
+          return {
+            id: product.id,
+
+            name: product.name,
+
+            slug: product.slug,
+
+            short_description:
+              product.short_description,
+
+            regular_price:
+              Number(
+                product.regular_price
               ),
-              getProductOfferByProductId(
-                product.id
-              ),
-            ]);
 
-            const primaryImage =
-              images.find(
-                (image) =>
-                  image.is_primary
-              ) ||
-              images[0] ||
-              null;
-
-            return {
-              id: product.id,
-
-              name: product.name,
-
-              slug: product.slug,
-
-              short_description:
-                product.short_description,
-
-              regular_price:
-                Number(
-                  product.regular_price
-                ),
-
-              sale_price:
-                product.sale_price !==
-                null
-                  ? Number(
-                      product.sale_price
-                    )
-                  : null,
-
-              stock_quantity:
-                Number(
-                  product.stock_quantity
-                ),
-
-              is_featured:
-                product.is_featured,
-
-              is_active:
-                product.is_active,
-
-              category_id:
-                product.category_id,
-
-              brand_id:
-                product.brand_id,
-
-              category_name:
-                categoryMap.get(
-                  product.category_id
-                ) || null,
-
-              brand_name:
-                product.brand_id
-                  ? brandMap.get(
-                      product.brand_id
-                    ) || null
-                  : null,
-
-              image_url:
-                primaryImage?.image_url ||
-                null,
-
-              size:
-                product.size ?? null,
-
-              color:
-                product.color ?? null,
-
-              offer: offer
-                ? {
-                    id: offer.id,
-
-                    discount_percentage:
-                      Number(
-                        offer.discount_percentage
-                      ),
-
-                    is_active:
-                      offer.is_active,
-                  }
+            sale_price:
+              product.sale_price !==
+              null
+                ? Number(
+                    product.sale_price
+                  )
                 : null,
-            };
-          }
-        )
+
+            stock_quantity:
+              product.stock_quantity,
+
+            is_featured:
+              product.is_featured,
+
+            is_active:
+              product.is_active,
+
+            category_id:
+              product.category_id,
+
+            brand_id:
+              product.brand_id,
+
+            category_name:
+              categoryMap.get(
+                product.category_id
+              ) || null,
+
+            brand_name:
+              product.brand_id
+                ? brandMap.get(
+                    product.brand_id
+                  ) || null
+                : null,
+
+            image_url:
+              primaryImage?.image_url ||
+              null,
+          };
+        })
     );
 
   return catalogProducts;
 }
-
-/* =========================================================
-   GET CUSTOMER PRODUCT BY SLUG
-========================================================= */
 
 export async function getCatalogProductBySlug(
   slug: string
@@ -197,15 +136,13 @@ export async function getCatalogProductBySlug(
   const supabase =
     await createClient();
 
-  const {
-    data: product,
-    error,
-  } = await supabase
-    .from("products")
-    .select("*")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .maybeSingle();
+  const { data: product, error } =
+    await supabase
+      .from("products")
+      .select("*")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .maybeSingle();
 
   if (error) {
     throw error;
@@ -219,16 +156,10 @@ export async function getCatalogProductBySlug(
     categories,
     brands,
     images,
-    offer,
   ] = await Promise.all([
     getActiveCategories(),
     getBrands(),
-    getProductImages(
-      product.id
-    ),
-    getProductOfferByProductId(
-      product.id
-    ),
+    getProductImages(product.id),
   ]);
 
   const category =
@@ -268,39 +199,12 @@ export async function getCatalogProductBySlug(
         product.purchase_cost
       ),
 
-    stock_quantity:
-      Number(
-        product.stock_quantity
-      ),
-
     category_name:
-      category?.name ||
-      null,
+      category?.name || null,
 
     brand_name:
-      brand?.name ||
-      null,
+      brand?.name || null,
 
     images,
-
-    size:
-      product.size ?? null,
-
-    color:
-      product.color ?? null,
-
-    offer: offer
-      ? {
-          id: offer.id,
-
-          discount_percentage:
-            Number(
-              offer.discount_percentage
-            ),
-
-          is_active:
-            offer.is_active,
-        }
-      : null,
   };
 }

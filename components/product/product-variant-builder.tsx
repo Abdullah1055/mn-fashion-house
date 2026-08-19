@@ -1,19 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
-export type ProductVariantDraft = {
+export type ProductVariantInput = {
   id?: string;
-  sku: string;
-  size: string;
   color: string;
+  size: string;
   stock_quantity: number;
-  low_stock_threshold: number;
+  sku: string;
 };
 
 type ProductVariantBuilderProps = {
-  initialVariants?: ProductVariantDraft[];
+  initialVariants?: ProductVariantInput[];
 };
 
 const SIZES = [
@@ -21,15 +20,16 @@ const SIZES = [
   "M",
   "L",
   "XL",
-  "XXL",
+  "2XL",
   "3XL",
+  "Free Size",
 ];
 
 export function ProductVariantBuilder({
   initialVariants = [],
 }: ProductVariantBuilderProps) {
   const [variants, setVariants] =
-    useState<ProductVariantDraft[]>(
+    useState<ProductVariantInput[]>(
       initialVariants
     );
 
@@ -39,130 +39,89 @@ export function ProductVariantBuilder({
   const [size, setSize] =
     useState("");
 
+  const [quantity, setQuantity] =
+    useState("0");
+
   const [sku, setSku] =
     useState("");
-
-  const [stockQuantity, setStockQuantity] =
-    useState("");
-
-  const [
-    lowStockThreshold,
-    setLowStockThreshold,
-  ] = useState("5");
 
   const [error, setError] =
     useState<string | null>(null);
 
-  function resetFields() {
-    setColor("");
-    setSize("");
-    setSku("");
-    setStockQuantity("");
-    setLowStockThreshold("5");
-    setError(null);
-  }
+  useEffect(() => {
+    setVariants(initialVariants);
+  }, [initialVariants]);
 
   function addVariant() {
     setError(null);
 
-    const normalizedColor =
+    const cleanColor =
       color.trim();
 
-    const normalizedSku =
-      sku.trim();
+    const cleanSize =
+      size.trim();
 
     const stock =
-      Number(stockQuantity);
+      Number(quantity);
 
-    const lowStock =
-      Number(lowStockThreshold);
-
-    if (!normalizedColor) {
+    if (!cleanColor) {
       setError(
         "Please enter a color."
       );
       return;
     }
 
-    if (!size) {
+    if (!cleanSize) {
       setError(
         "Please select a size."
       );
       return;
     }
 
-    if (!normalizedSku) {
-      setError(
-        "Please enter a variant SKU."
-      );
-      return;
-    }
-
     if (
-      stockQuantity === "" ||
       !Number.isInteger(stock) ||
       stock < 0
     ) {
       setError(
-        "Please enter a valid stock quantity."
+        "Quantity must be 0 or greater."
       );
       return;
     }
 
-    if (
-      lowStockThreshold === "" ||
-      !Number.isInteger(lowStock) ||
-      lowStock < 0
-    ) {
-      setError(
-        "Please enter a valid low stock threshold."
-      );
-      return;
-    }
-
-    const duplicateSku =
+    const duplicate =
       variants.some(
         (variant) =>
-          variant.sku.toLowerCase() ===
-          normalizedSku.toLowerCase()
+          variant.color
+            .trim()
+            .toLowerCase() ===
+            cleanColor.toLowerCase() &&
+          variant.size
+            .trim()
+            .toLowerCase() ===
+            cleanSize.toLowerCase()
       );
 
-    if (duplicateSku) {
+    if (duplicate) {
       setError(
-        "This variant SKU already exists."
+        "This color and size combination already exists."
       );
       return;
     }
-
-    const duplicateCombination =
-      variants.some(
-        (variant) =>
-          variant.color.toLowerCase() ===
-            normalizedColor.toLowerCase() &&
-          variant.size === size
-      );
-
-    if (duplicateCombination) {
-      setError(
-        `${normalizedColor} / ${size} variant already exists.`
-      );
-      return;
-    }
-
-    const newVariant: ProductVariantDraft = {
-      sku: normalizedSku,
-      size,
-      color: normalizedColor,
-      stock_quantity: stock,
-      low_stock_threshold: lowStock,
-    };
 
     setVariants((current) => [
       ...current,
-      newVariant,
+      {
+        color: cleanColor,
+        size: cleanSize,
+        stock_quantity: stock,
+        sku: sku.trim(),
+      },
     ]);
 
-    resetFields();
+    setColor("");
+    setSize("");
+    setQuantity("0");
+    setSku("");
   }
 
   function removeVariant(
@@ -170,54 +129,61 @@ export function ProductVariantBuilder({
   ) {
     setVariants((current) =>
       current.filter(
-        (_, currentIndex) =>
-          currentIndex !== index
+        (_, itemIndex) =>
+          itemIndex !== index
       )
     );
-
-    setError(null);
   }
 
-  return (
-    <section className="rounded-2xl border bg-white p-6 shadow-sm">
-      {/* Header */}
+  const totalStock =
+    variants.reduce(
+      (total, variant) =>
+        total +
+        Number(
+          variant.stock_quantity || 0
+        ),
+      0
+    );
 
+  return (
+    <section className="rounded-2xl border bg-white p-5 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold">
+        <h2 className="text-lg font-semibold text-neutral-900">
           Product Variants
         </h2>
 
         <p className="mt-1 text-sm text-neutral-500">
-          Add color, size and stock for
-          each product variant.
+          Add colors and sizes with their
+          available quantities.
         </p>
       </div>
 
-      {/* Add Variant */}
+      {/* =====================================================
+          ADD VARIANT
+      ====================================================== */}
 
-      <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5">
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+        <div className="grid gap-3 md:grid-cols-5">
           {/* Color */}
 
           <div>
             <label
-              htmlFor="variant_color"
-              className="mb-2 block text-sm font-medium"
+              htmlFor="variant-color"
+              className="mb-1.5 block text-sm font-medium text-neutral-900"
             >
               Color
             </label>
 
             <input
-              id="variant_color"
-              type="text"
+              id="variant-color"
               value={color}
               onChange={(event) =>
                 setColor(
                   event.target.value
                 )
               }
-              placeholder="Navy"
-              className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              placeholder="Red"
+              className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
             />
           </div>
 
@@ -225,164 +191,165 @@ export function ProductVariantBuilder({
 
           <div>
             <label
-              htmlFor="variant_size"
-              className="mb-2 block text-sm font-medium"
+              htmlFor="variant-size"
+              className="mb-1.5 block text-sm font-medium text-neutral-900"
             >
               Size
             </label>
 
             <select
-              id="variant_size"
+              id="variant-size"
               value={size}
               onChange={(event) =>
                 setSize(
                   event.target.value
                 )
               }
-              className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
             >
               <option value="">
                 Select size
               </option>
 
-              {SIZES.map((item) => (
-                <option
-                  key={item}
-                  value={item}
-                >
-                  {item}
-                </option>
-              ))}
+              {SIZES.map(
+                (itemSize) => (
+                  <option
+                    key={itemSize}
+                    value={itemSize}
+                  >
+                    {itemSize}
+                  </option>
+                )
+              )}
             </select>
           </div>
 
-          {/* Variant SKU */}
+          {/* Quantity */}
 
           <div>
             <label
-              htmlFor="variant_sku"
-              className="mb-2 block text-sm font-medium"
+              htmlFor="variant-quantity"
+              className="mb-1.5 block text-sm font-medium text-neutral-900"
+            >
+              Quantity
+            </label>
+
+            <input
+              id="variant-quantity"
+              type="number"
+              min="0"
+              step="1"
+              value={quantity}
+              onChange={(event) =>
+                setQuantity(
+                  event.target.value
+                )
+              }
+              className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
+
+          {/* SKU */}
+
+          <div>
+            <label
+              htmlFor="variant-sku"
+              className="mb-1.5 block text-sm font-medium text-neutral-900"
             >
               Variant SKU
             </label>
 
             <input
-              id="variant_sku"
-              type="text"
+              id="variant-sku"
               value={sku}
               onChange={(event) =>
                 setSku(
                   event.target.value
                 )
               }
-              placeholder="POLO-NAVY-M"
-              className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              placeholder="Optional"
+              className="h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
             />
           </div>
 
-          {/* Stock */}
+          {/* Add */}
 
-          <div>
-            <label
-              htmlFor="variant_stock_quantity"
-              className="mb-2 block text-sm font-medium"
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={addVariant}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 text-sm font-medium text-white transition hover:bg-sky-700"
             >
-              Stock Quantity
-            </label>
-
-            <input
-              id="variant_stock_quantity"
-              type="number"
-              min="0"
-              step="1"
-              value={stockQuantity}
-              onChange={(event) =>
-                setStockQuantity(
-                  event.target.value
-                )
-              }
-              placeholder="0"
-              className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-            />
-          </div>
-
-          {/* Low Stock */}
-
-          <div>
-            <label
-              htmlFor="variant_low_stock_threshold"
-              className="mb-2 block text-sm font-medium"
-            >
-              Low Stock Threshold
-            </label>
-
-            <input
-              id="variant_low_stock_threshold"
-              type="number"
-              min="0"
-              step="1"
-              value={lowStockThreshold}
-              onChange={(event) =>
-                setLowStockThreshold(
-                  event.target.value
-                )
-              }
-              className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-            />
+              <Plus size={17} />
+              Add Variant
+            </button>
           </div>
         </div>
 
-        {/* Error */}
-
         {error && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
-
-        {/* Add Button */}
-
-        <div className="mt-5 flex justify-end">
-          <button
-            type="button"
-            onClick={addVariant}
-            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-sky-700"
-          >
-            <Plus size={17} />
-            Add Variant
-          </button>
-        </div>
       </div>
 
-      {/* Variant List */}
+      {/* =====================================================
+          VARIANT LIST
+      ====================================================== */}
 
-      {variants.length > 0 && (
-        <div className="mt-5 overflow-hidden rounded-xl border">
+      <div className="mt-5 overflow-hidden rounded-xl border border-neutral-200">
+        <div className="flex items-center justify-between border-b bg-neutral-50 px-4 py-3">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-900">
+              Added Variants
+            </h3>
+
+            <p className="mt-0.5 text-xs text-neutral-500">
+              {variants.length} variant
+              {variants.length === 1
+                ? ""
+                : "s"}
+            </p>
+          </div>
+
+          <div className="text-sm font-semibold text-neutral-700">
+            Total Stock: {totalStock}
+          </div>
+        </div>
+
+        {variants.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className="text-sm text-neutral-500">
+              No variants added yet.
+            </p>
+
+            <p className="mt-1 text-xs text-neutral-400">
+              Add a color, size and quantity
+              above.
+            </p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px] text-sm">
-              <thead className="bg-neutral-50">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold">
+            <table className="w-full min-w-[650px]">
+              <thead className="bg-white">
+                <tr className="border-b">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Color
                   </th>
 
-                  <th className="px-4 py-3 text-left font-semibold">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Size
                   </th>
 
-                  <th className="px-4 py-3 text-left font-semibold">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     SKU
                   </th>
 
-                  <th className="px-4 py-3 text-center font-semibold">
-                    Stock
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Quantity
                   </th>
 
-                  <th className="px-4 py-3 text-center font-semibold">
-                    Low Stock
-                  </th>
-
-                  <th className="px-4 py-3 text-center font-semibold">
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Action
                   </th>
                 </tr>
@@ -390,88 +357,90 @@ export function ProductVariantBuilder({
 
               <tbody>
                 {variants.map(
-                  (variant, index) => {
-                    const isLowStock =
-                      variant.stock_quantity <=
-                      variant.low_stock_threshold;
+                  (
+                    variant,
+                    index
+                  ) => (
+                    <tr
+                      key={`${variant.id ?? "new"}-${index}`}
+                      className="border-b last:border-b-0"
+                    >
+                      <td className="px-4 py-3 text-sm font-medium text-neutral-900">
+                        {variant.color}
+                      </td>
 
-                    return (
-                      <tr
-                        key={
-                          variant.id ??
-                          `${variant.sku}-${index}`
-                        }
-                        className="border-t"
-                      >
-                        <td className="px-4 py-3 font-medium">
-                          {variant.color}
-                        </td>
+                      <td className="px-4 py-3 text-sm text-neutral-700">
+                        {variant.size}
+                      </td>
 
-                        <td className="px-4 py-3">
-                          <span className="rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-semibold">
-                            {variant.size}
-                          </span>
-                        </td>
+                      <td className="px-4 py-3 text-sm text-neutral-500">
+                        {variant.sku ||
+                          "-"}
+                      </td>
 
-                        <td className="px-4 py-3">
-                          {variant.sku}
-                        </td>
+                      <td className="px-4 py-3 text-center text-sm font-semibold text-neutral-900">
+                        {variant.stock_quantity}
+                      </td>
 
-                        <td className="px-4 py-3 text-center">
-                          <span
-                            className={
-                              isLowStock
-                                ? "font-semibold text-red-600"
-                                : "font-medium text-neutral-700"
-                            }
-                          >
-                            {
-                              variant.stock_quantity
-                            }
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3 text-center">
-                          {
-                            variant.low_stock_threshold
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removeVariant(
+                              index
+                            )
                           }
-                        </td>
-
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeVariant(
-                                index
-                              )
-                            }
-                            className="rounded-lg border border-red-200 p-2 text-red-600 transition hover:bg-red-50"
-                            title="Remove variant"
-                          >
-                            <Trash2
-                              size={16}
-                            />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  }
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50"
+                          aria-label="Remove variant"
+                        >
+                          <Trash2
+                            size={16}
+                          />
+                        </button>
+                      </td>
+                    </tr>
+                  )
                 )}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Variants submitted with Product Form */}
+      {/* =====================================================
+          HIDDEN DATA
+      ====================================================== */}
 
       <input
         type="hidden"
-        name="variants_json"
+        name="variant_data"
         value={JSON.stringify(
           variants
         )}
-        readOnly
+      />
+
+      {/* Keep legacy product stock in sync.
+          Backend will calculate it again from variants. */}
+
+      <input
+        type="hidden"
+        name="stock_quantity"
+        value={totalStock}
+      />
+
+      {/* Old product-level color/size are
+          intentionally left empty. */}
+
+      <input
+        type="hidden"
+        name="color"
+        value=""
+      />
+
+      <input
+        type="hidden"
+        name="size"
+        value=""
       />
     </section>
   );

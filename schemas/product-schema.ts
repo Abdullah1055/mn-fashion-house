@@ -1,73 +1,101 @@
 import { z } from "zod";
 
 export const productSchema = z.object({
-  category_id: z.string().uuid(),
+  category_id: z
+    .string()
+    .min(1, "Category is required."),
 
   brand_id: z
     .string()
-    .uuid()
-    .nullable()
-    .optional(),
+    .nullable(),
 
   name: z
     .string()
     .trim()
-    .min(2)
-    .max(150),
+    .min(
+      1,
+      "Product name is required."
+    ),
 
   slug: z
     .string()
     .trim()
-    .min(2)
-    .max(180),
+    .min(
+      1,
+      "Product slug is required."
+    ),
 
-  short_description: z
-    .string()
-    .optional(),
+  short_description:
+    z.string().nullable(),
 
-  description: z
-    .string()
-    .optional(),
+  description:
+    z.string().nullable(),
 
-  sku: z
-    .string()
-    .optional(),
+  sku:
+    z.string().nullable(),
 
-  color: z
-    .string()
-    .trim()
-    .optional(),
+  color:
+    z.string().nullable(),
 
-  size: z
-    .string()
-    .trim()
-    .optional(),
+  /*
+   * Size is now handled inside
+   * product_variants.
+   */
+  size:
+    z.string().nullable(),
 
-  purchase_cost: z.coerce.number(),
+  purchase_cost:
+    z.coerce
+      .number()
+      .min(
+        0,
+        "Purchase cost cannot be negative."
+      ),
 
-  regular_price: z.coerce.number(),
+  regular_price:
+    z.coerce
+      .number()
+      .min(
+        0,
+        "Regular price cannot be negative."
+      ),
 
-  sale_price: z.coerce
-    .number()
-    .nullable()
-    .optional(),
+  sale_price:
+    z
+      .number()
+      .min(
+        0,
+        "Sale price cannot be negative."
+      )
+      .nullable(),
 
-  stock_quantity: z.coerce.number(),
+  /*
+   * Automatically calculated:
+   *
+   * S + M + L + XL
+   */
+  stock_quantity:
+    z.coerce
+      .number()
+      .int()
+      .min(0),
 
-  low_stock_threshold: z.coerce.number(),
+  low_stock_threshold:
+    z.coerce
+      .number()
+      .int()
+      .min(0)
+      .default(3),
 
-  is_featured: z.boolean(),
+  is_featured:
+    z.boolean(),
 
-  is_active: z.boolean(),
+  is_active:
+    z.boolean(),
 
-  seo_title: z
-    .string()
-    .optional(),
+  seo_title:
+    z.string().nullable(),
 
-  seo_description: z
-    .string()
-    .optional(),
+  seo_description:
+    z.string().nullable(),
 });
-
-export type ProductSchema =
-  z.infer<typeof productSchema>;

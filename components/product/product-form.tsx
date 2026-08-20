@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Trash2,
@@ -26,6 +27,12 @@ type Brand = {
   name: string;
 };
 
+type ExistingVariant = {
+  id: string;
+  size: string | null;
+  stock_quantity: number | null;
+};
+
 type ProductData = {
   id?: string;
 
@@ -37,6 +44,7 @@ type ProductData = {
   sku?: string | null;
 
   short_description?: string | null;
+  description?: string | null;
 
   color?: string | null;
 
@@ -44,14 +52,21 @@ type ProductData = {
   regular_price?: number | null;
   sale_price?: number | null;
 
+  stock_quantity?: number | null;
   low_stock_threshold?: number | null;
 
   is_featured?: boolean;
   is_active?: boolean;
+
+  seo_title?: string | null;
+  seo_description?: string | null;
+
+  variants?: ExistingVariant[];
 };
 
 type SizeRow = {
   id: string;
+  variantId: string | null;
   size: string;
   quantity: number;
 };
@@ -82,27 +97,67 @@ export function ProductForm({
   brands,
   product,
 }: ProductFormProps) {
+  const router = useRouter();
+
   const isEdit =
     Boolean(product?.id);
 
-  /* -------------------------------------------------------
-     SIZE + QUANTITY STATE
-  ------------------------------------------------------- */
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  /* =======================================================
+     INITIAL SIZE ROWS
+
+     IMPORTANT:
+     Edit mode loads existing variants.
+     Create mode starts with S.
+  ======================================================== */
 
   const [
     sizeRows,
     setSizeRows,
-  ] = useState<SizeRow[]>([
-    {
-      id: crypto.randomUUID(),
-      size: "S",
-      quantity: 0,
-    },
-  ]);
+  ] = useState<SizeRow[]>(() => {
+    const existingVariants =
+      product?.variants ?? [];
 
-  /* -------------------------------------------------------
+    if (
+      existingVariants.length > 0
+    ) {
+      return existingVariants.map(
+        (variant) => ({
+          id: crypto.randomUUID(),
+
+          variantId:
+            variant.id,
+
+          size:
+            variant.size ?? "",
+
+          quantity:
+            Number(
+              variant.stock_quantity ??
+                0
+            ),
+        })
+      );
+    }
+
+    return [
+      {
+        id: crypto.randomUUID(),
+        variantId: null,
+        size: "S",
+        quantity: 0,
+      },
+    ];
+  });
+
+  /* =======================================================
      ADD SIZE
-  ------------------------------------------------------- */
+  ======================================================== */
 
   function addSize() {
     const usedSizes =
@@ -125,17 +180,17 @@ export function ProductForm({
       ...current,
       {
         id: crypto.randomUUID(),
+        variantId: null,
         size:
-          nextAvailableSize ||
-          "",
+          nextAvailableSize ?? "",
         quantity: 0,
       },
     ]);
   }
 
-  /* -------------------------------------------------------
+  /* =======================================================
      REMOVE SIZE
-  ------------------------------------------------------- */
+  ======================================================== */
 
   function removeSize(
     id: string
@@ -148,9 +203,9 @@ export function ProductForm({
     );
   }
 
-  /* -------------------------------------------------------
+  /* =======================================================
      UPDATE SIZE
-  ------------------------------------------------------- */
+  ======================================================== */
 
   function updateSize(
     id: string,
@@ -168,9 +223,9 @@ export function ProductForm({
     );
   }
 
-  /* -------------------------------------------------------
+  /* =======================================================
      UPDATE QUANTITY
-  ------------------------------------------------------- */
+  ======================================================== */
 
   function updateQuantity(
     id: string,
@@ -201,38 +256,83 @@ export function ProductForm({
     );
   }
 
-  /* -------------------------------------------------------
+  /* =======================================================
      TOTAL STOCK
-  ------------------------------------------------------- */
+  ======================================================== */
 
   const totalStock =
     sizeRows.reduce(
-      (
-        total,
-        row
-      ) =>
-        total +
-        row.quantity,
+      (total, row) =>
+        total + row.quantity,
       0
     );
 
+  /* =======================================================
+     SUBMIT
+  ======================================================== */
+
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const formData =
+        new FormData(
+          event.currentTarget
+        );
+
+      if (isEdit) {
+        await updateProduct(
+          product!.id!,
+          formData
+        );
+      } else {
+        await createProduct(
+          formData
+        );
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong.";
+
+      if (
+        !message.includes(
+          "NEXT_REDIRECT"
+        )
+      ) {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <form
-      action={
-        isEdit
-          ? updateProduct.bind(
-              null,
-              product!.id!
-            )
-          : createProduct
-      }
-      className="space-y-6"
+      onSubmit={handleSubmit}
+      className="space-y-8"
     >
-      {/* =====================================================
-          BASIC INFORMATION
-      ====================================================== */}
+      {/* =================================================
+          ERROR
+      ================================================== */}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* =================================================
+          BASIC INFORMATION
+      ================================================== */}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
         <div className="mb-6">
           <h2 className="text-xl font-bold text-slate-950">
@@ -244,13 +344,14 @@ export function ProductForm({
           </p>
         </div>
 
-        {/* ===================================================
-            ROW 1 — FIVE FIELDS
-        ==================================================== */}
+        {/* =================================================
+            ROW 1
+        ================================================== */}
 
         <div className="grid gap-4 xl:grid-cols-5">
 
           {/* Category */}
+
           <div>
             <label
               htmlFor="category_id"
@@ -276,16 +377,10 @@ export function ProductForm({
               {categories.map(
                 (category) => (
                   <option
-                    key={
-                      category.id
-                    }
-                    value={
-                      category.id
-                    }
+                    key={category.id}
+                    value={category.id}
                   >
-                    {
-                      category.name
-                    }
+                    {category.name}
                   </option>
                 )
               )}
@@ -293,6 +388,7 @@ export function ProductForm({
           </div>
 
           {/* Brand */}
+
           <div>
             <label
               htmlFor="brand_id"
@@ -317,12 +413,8 @@ export function ProductForm({
               {brands.map(
                 (brand) => (
                   <option
-                    key={
-                      brand.id
-                    }
-                    value={
-                      brand.id
-                    }
+                    key={brand.id}
+                    value={brand.id}
                   >
                     {brand.name}
                   </option>
@@ -332,6 +424,7 @@ export function ProductForm({
           </div>
 
           {/* Product Name */}
+
           <div>
             <label
               htmlFor="name"
@@ -355,6 +448,7 @@ export function ProductForm({
           </div>
 
           {/* Slug */}
+
           <div>
             <label
               htmlFor="slug"
@@ -377,7 +471,8 @@ export function ProductForm({
             />
           </div>
 
-          {/* Product SKU */}
+          {/* SKU */}
+
           <div>
             <label
               htmlFor="sku"
@@ -400,9 +495,9 @@ export function ProductForm({
           </div>
         </div>
 
-        {/* ===================================================
+        {/* =================================================
             SHORT DESCRIPTION
-        ==================================================== */}
+        ================================================== */}
 
         <div className="mt-5">
           <label
@@ -425,53 +520,78 @@ export function ProductForm({
           />
         </div>
 
-      </div>
+        {/* =================================================
+            DESCRIPTION
+        ================================================== */}
 
-      {/* =====================================================
-          PRICING AND STOCK
-      ====================================================== */}
+        <div className="mt-5">
+          <label
+            htmlFor="description"
+            className="mb-2 block text-sm font-medium text-slate-800"
+          >
+            Description
+          </label>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <textarea
+            id="description"
+            name="description"
+            rows={7}
+            defaultValue={
+              product?.description ??
+              ""
+            }
+            placeholder="Detailed product description"
+            className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
+
+        {/* =================================================
+            COLOR
+        ================================================== */}
+
+        <div className="mt-5 max-w-sm">
+          <label
+            htmlFor="color"
+            className="mb-2 block text-sm font-medium text-slate-800"
+          >
+            Color
+          </label>
+
+          <input
+            id="color"
+            name="color"
+            type="text"
+            defaultValue={
+              product?.color ??
+              ""
+            }
+            placeholder="e.g. Red"
+            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
+
+      </section>
+
+      {/* =================================================
+          PRICING
+      ================================================== */}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
         <div className="mb-6">
           <h2 className="text-xl font-bold text-slate-950">
-            Pricing and Stock
+            Pricing
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Set the product color, pricing and size-wise stock.
+            Configure purchase and selling prices.
           </p>
         </div>
 
-        {/* ===================================================
-            COLOR + PRICING
-        ==================================================== */}
-
-        <div className="grid gap-4 lg:grid-cols-4">
-
-          {/* Color */}
-          <div>
-            <label
-              htmlFor="color"
-              className="mb-2 block text-sm font-medium text-slate-800"
-            >
-              Color
-            </label>
-
-            <input
-              id="color"
-              name="color"
-              type="text"
-              defaultValue={
-                product?.color ??
-                ""
-              }
-              placeholder="Black"
-              className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+        <div className="grid gap-4 md:grid-cols-3">
 
           {/* Purchase Cost */}
+
           <div>
             <label
               htmlFor="purchase_cost"
@@ -486,6 +606,7 @@ export function ProductForm({
               type="number"
               min="0"
               step="0.01"
+              required
               defaultValue={
                 product?.purchase_cost ??
                 0
@@ -495,6 +616,7 @@ export function ProductForm({
           </div>
 
           {/* Regular Price */}
+
           <div>
             <label
               htmlFor="regular_price"
@@ -514,12 +636,12 @@ export function ProductForm({
                 product?.regular_price ??
                 ""
               }
-              placeholder="0"
               className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
           {/* Sale Price */}
+
           <div>
             <label
               htmlFor="sale_price"
@@ -538,176 +660,200 @@ export function ProductForm({
                 product?.sale_price ??
                 ""
               }
-              placeholder="Optional"
               className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
         </div>
 
-        {/* ===================================================
-            SIZE + QUANTITY
-        ==================================================== */}
+        <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          Regular and sale prices will be applied to the product variants.
+        </div>
 
-        <div className="mt-6">
+      </section>
 
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      {/* =================================================
+          INVENTORY / SIZE
+      ================================================== */}
 
-            <div>
-              <h3 className="text-base font-semibold text-slate-950">
-                Size & Quantity
-              </h3>
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
-              <p className="mt-1 text-xs text-slate-500">
-                Add each available size with its stock quantity.
-              </p>
-            </div>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
-            <button
-              type="button"
-              onClick={addSize}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              <Plus size={16} />
-              Add Size
-            </button>
+          <div>
+            <h2 className="text-xl font-bold text-slate-950">
+              Product Sizes & Inventory
+            </h2>
 
+            <p className="mt-1 text-sm text-slate-500">
+              Manage available sizes and stock quantity.
+            </p>
           </div>
 
-          {/* Size Rows */}
-
-          <div className="space-y-3">
-
-            {sizeRows.map(
-              (
-                row,
-                index
-              ) => (
-                <div
-                  key={row.id}
-                  className="grid grid-cols-[1fr_1fr_auto] gap-3"
-                >
-
-                  {/* Size */}
-                  <div>
-                    <label
-                      htmlFor={`size_${index}`}
-                      className="mb-1.5 block text-xs font-medium text-slate-600"
-                    >
-                      Size
-                    </label>
-
-                    <input
-                      id={`size_${index}`}
-                      name={`size_${index}`}
-                      type="text"
-                      value={
-                        row.size
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        updateSize(
-                          row.id,
-                          event
-                            .target
-                            .value
-                        )
-                      }
-                      placeholder="S / M / L / XL"
-                      className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-
-                  {/* Quantity */}
-                  <div>
-                    <label
-                      htmlFor={`quantity_${index}`}
-                      className="mb-1.5 block text-xs font-medium text-slate-600"
-                    >
-                      Quantity
-                    </label>
-
-                    <input
-                      id={`quantity_${index}`}
-                      name={`quantity_${index}`}
-                      type="number"
-                      min="0"
-                      value={
-                        row.quantity
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        updateQuantity(
-                          row.id,
-                          event
-                            .target
-                            .value
-                        )
-                      }
-                      className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-
-                  {/* Delete */}
-                  <div className="flex items-end">
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeSize(
-                          row.id
-                        )
-                      }
-                      disabled={
-                        sizeRows.length ===
-                        1
-                      }
-                      aria-label="Remove size"
-                      className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Trash2
-                        size={17}
-                      />
-                    </button>
-
-                  </div>
-
-                </div>
-              )
-            )}
-
-          </div>
-
-          {/* =================================================
-              TOTAL STOCK
-          ================================================== */}
-
-          <div className="mt-5 flex flex-wrap items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-
-            <span className="text-sm font-medium text-slate-600">
-              Total Stock
-            </span>
-
-            <span className="text-lg font-bold text-slate-950">
-              {totalStock} pcs
-            </span>
-
-          </div>
-
-          {/* Hidden total stock */}
-          <input
-            type="hidden"
-            name="stock_quantity"
-            value={totalStock}
-          />
+          <button
+            type="button"
+            onClick={addSize}
+            disabled={
+              sizeRows.length >=
+              DEFAULT_SIZES.length
+            }
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus size={17} />
+            Add Size
+          </button>
 
         </div>
 
-        {/* ===================================================
+        {/* =================================================
+            SIZE ROWS
+        ================================================== */}
+
+        <div className="space-y-4">
+
+          {sizeRows.map(
+            (row, index) => (
+              <div
+                key={row.id}
+                className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto]"
+              >
+
+                {/* Hidden existing variant ID */}
+
+                <input
+                  type="hidden"
+                  name={`variant_id_${index}`}
+                  value={
+                    row.variantId ??
+                    ""
+                  }
+                />
+
+                {/* Size */}
+
+                <div>
+                  <label
+                    htmlFor={`size-${row.id}`}
+                    className="mb-2 block text-sm font-medium text-slate-800"
+                  >
+                    Size
+                  </label>
+
+                  <select
+                    id={`size-${row.id}`}
+                    name={`size_${index}`}
+                    value={row.size}
+                    onChange={(event) =>
+                      updateSize(
+                        row.id,
+                        event.target.value
+                      )
+                    }
+                    required
+                    className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">
+                      Select size
+                    </option>
+
+                    {DEFAULT_SIZES.map(
+                      (size) => (
+                        <option
+                          key={size}
+                          value={size}
+                        >
+                          {size}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                {/* Quantity */}
+
+                <div>
+                  <label
+                    htmlFor={`quantity-${row.id}`}
+                    className="mb-2 block text-sm font-medium text-slate-800"
+                  >
+                    Quantity
+                  </label>
+
+                  <input
+                    id={`quantity-${row.id}`}
+                    name={`quantity_${index}`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={
+                      row.quantity
+                    }
+                    onChange={(event) =>
+                      updateQuantity(
+                        row.id,
+                        event.target.value
+                      )
+                    }
+                    className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                {/* Delete */}
+
+                <div className="flex items-end">
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeSize(
+                        row.id
+                      )
+                    }
+                    disabled={
+                      sizeRows.length ===
+                      1
+                    }
+                    aria-label="Remove size"
+                    className="flex h-12 w-12 items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Trash2
+                      size={17}
+                    />
+                  </button>
+
+                </div>
+
+              </div>
+            )
+          )}
+
+        </div>
+
+        {/* =================================================
+            TOTAL STOCK
+        ================================================== */}
+
+        <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+
+          <span className="text-sm font-medium text-slate-600">
+            Total Stock
+          </span>
+
+          <span className="text-lg font-bold text-slate-950">
+            {totalStock} pcs
+          </span>
+
+        </div>
+
+        <input
+          type="hidden"
+          name="stock_quantity"
+          value={totalStock}
+        />
+
+        {/* =================================================
             LOW STOCK THRESHOLD
-        ==================================================== */}
+        ================================================== */}
 
         <div className="mt-6 max-w-sm">
 
@@ -723,26 +869,27 @@ export function ProductForm({
             name="low_stock_threshold"
             type="number"
             min="0"
+            step="1"
             defaultValue={
               product?.low_stock_threshold ??
               3
             }
-            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
 
           <p className="mt-1.5 text-xs text-slate-500">
-            Default: 3 pcs
+            Product will be considered low stock at this quantity.
           </p>
 
         </div>
 
-      </div>
+      </section>
 
-      {/* =====================================================
+      {/* =================================================
           PRODUCT SETTINGS
-      ====================================================== */}
+      ================================================== */}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
         <div className="mb-5">
           <h2 className="text-xl font-bold text-slate-950">
@@ -757,6 +904,7 @@ export function ProductForm({
         <div className="grid gap-4 sm:grid-cols-2">
 
           {/* Featured */}
+
           <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:bg-slate-50">
 
             <input
@@ -775,13 +923,14 @@ export function ProductForm({
               </p>
 
               <p className="mt-1 text-xs text-slate-500">
-                Highlight this product in the store.
+                Show this product in featured sections.
               </p>
             </div>
 
           </label>
 
           {/* Active */}
+
           <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:bg-slate-50">
 
             <input
@@ -800,7 +949,7 @@ export function ProductForm({
               </p>
 
               <p className="mt-1 text-xs text-slate-500">
-                Make this product available in the store.
+                Make this product visible in the store.
               </p>
             </div>
 
@@ -808,13 +957,13 @@ export function ProductForm({
 
         </div>
 
-      </div>
+      </section>
 
-      {/* =====================================================
+      {/* =================================================
           SEO
-      ====================================================== */}
+      ================================================== */}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
         <div className="mb-5">
           <h2 className="text-xl font-bold text-slate-950">
@@ -822,67 +971,93 @@ export function ProductForm({
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Optional search engine information.
+            Optional information for search engine optimization.
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        {/* SEO Title */}
 
-          {/* SEO Title */}
-          <div>
-            <label
-              htmlFor="seo_title"
-              className="mb-2 block text-sm font-medium text-slate-800"
-            >
-              SEO Title
-            </label>
+        <div>
+          <label
+            htmlFor="seo_title"
+            className="mb-2 block text-sm font-medium text-slate-800"
+          >
+            SEO Title
+          </label>
 
-            <input
-              id="seo_title"
-              name="seo_title"
-              type="text"
-              placeholder="SEO title"
-              className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+          <input
+            id="seo_title"
+            name="seo_title"
+            type="text"
+            defaultValue={
+              product?.seo_title ??
+              ""
+            }
+            placeholder="SEO title"
+            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
 
-          {/* SEO Description */}
-          <div>
-            <label
-              htmlFor="seo_description"
-              className="mb-2 block text-sm font-medium text-slate-800"
-            >
-              SEO Description
-            </label>
+        {/* SEO Description */}
 
-            <textarea
-              id="seo_description"
-              name="seo_description"
-              rows={3}
-              placeholder="SEO description"
-              className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+        <div className="mt-5">
+
+          <label
+            htmlFor="seo_description"
+            className="mb-2 block text-sm font-medium text-slate-800"
+          >
+            SEO Description
+          </label>
+
+          <textarea
+            id="seo_description"
+            name="seo_description"
+            rows={4}
+            defaultValue={
+              product?.seo_description ??
+              ""
+            }
+            placeholder="SEO description"
+            className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
 
         </div>
 
-      </div>
+      </section>
 
-      {/* =====================================================
-          SUBMIT
-      ====================================================== */}
+      {/* =================================================
+          ACTIONS
+      ================================================== */}
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+
+        <button
+          type="button"
+          onClick={() =>
+            router.push(
+              "/admin/products"
+            )
+          }
+          disabled={loading}
+          className="rounded-lg border border-slate-300 px-6 py-3 text-sm font-medium transition hover:bg-slate-50 disabled:opacity-50"
+        >
+          Cancel
+        </button>
 
         <button
           type="submit"
-          className="inline-flex h-12 items-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Save size={17} />
 
-          {isEdit
-            ? "Update Product"
-            : "Create Product"}
+          {loading
+            ? isEdit
+              ? "Updating..."
+              : "Saving..."
+            : isEdit
+              ? "Update Product"
+              : "Save Product"}
         </button>
 
       </div>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { OrderStatusControl } from "@/components/orders/order-status-control";
+import { PaymentStatusControl } from "@/components/orders/payment-status-control";
 import { getOrderWithItems } from "@/lib/services/order.service";
 
 function formatCurrency(value: number) {
@@ -107,7 +108,7 @@ export default async function OrderDetailsPage({
             Customer Information
           </h2>
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
+          <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
 
             <div>
               <p className="text-xs text-neutral-500">
@@ -152,7 +153,7 @@ export default async function OrderDetailsPage({
             Delivery Information
           </h2>
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
+          <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
 
             <div>
               <p className="text-xs text-neutral-500">
@@ -287,8 +288,6 @@ export default async function OrderDetailsPage({
 
           <div className="mt-3 space-y-2.5 text-sm">
 
-            {/* Subtotal */}
-
             <div className="flex items-center justify-between">
               <span className="text-neutral-500">
                 Subtotal
@@ -300,8 +299,6 @@ export default async function OrderDetailsPage({
                 )}
               </span>
             </div>
-
-            {/* Discount */}
 
             <div className="flex items-center justify-between">
               <span className="text-neutral-500">
@@ -318,8 +315,6 @@ export default async function OrderDetailsPage({
               </span>
             </div>
 
-            {/* Delivery */}
-
             <div className="flex items-center justify-between">
               <span className="text-neutral-500">
                 Delivery Charge
@@ -333,8 +328,6 @@ export default async function OrderDetailsPage({
                 )}
               </span>
             </div>
-
-            {/* Grand Total */}
 
             <div className="mt-2 border-t border-neutral-200 pt-3">
 
@@ -446,9 +439,10 @@ export default async function OrderDetailsPage({
                 Status
               </span>
 
-              <span className="font-medium capitalize text-neutral-900">
-                {order.payment_status}
-              </span>
+              <PaymentStatusControl
+                orderId={order.id}
+                currentStatus={order.payment_status}
+              />
             </div>
 
           </div>

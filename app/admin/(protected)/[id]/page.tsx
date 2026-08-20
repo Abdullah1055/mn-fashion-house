@@ -6,11 +6,15 @@ import { getActiveCategories } from "@/lib/services/category.service";
 import { getBrands } from "@/lib/services/brand.service";
 import { getProductById } from "@/lib/services/product.service";
 
+type EditProductPageProps = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
 export default async function EditProductPage({
   params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+}: EditProductPageProps) {
   const { id } = await params;
 
   const product = await getProductById(id);
@@ -19,11 +23,10 @@ export default async function EditProductPage({
     notFound();
   }
 
-  const [categories, brands] =
-    await Promise.all([
-      getActiveCategories(),
-      getBrands(),
-    ]);
+  const [categories, brands] = await Promise.all([
+    getActiveCategories(),
+    getBrands(),
+  ]);
 
   return (
     <div className="space-y-8">

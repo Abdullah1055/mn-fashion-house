@@ -7,9 +7,13 @@ import {
   Plus,
   ShoppingBag,
   Zap,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
 
 import { useCart } from "@/components/cart/cart-provider";
 
@@ -61,6 +65,16 @@ type ProductDetailsProps = {
 };
 
 /* =========================================================
+   SELECTED SIZE
+========================================================= */
+
+type SelectedSize = {
+  size: string;
+  variant: ProductVariant | null;
+  quantity: number;
+};
+
+/* =========================================================
    PRODUCT DETAILS
 ========================================================= */
 
@@ -76,94 +90,120 @@ export function ProductDetails({
      SORT IMAGES
   ========================================================= */
 
-  const sortedImages = useMemo(() => {
-    return [...product.images].sort(
-      (a, b) => {
-        if (
-          a.is_primary !==
-          b.is_primary
-        ) {
-          return a.is_primary ? -1 : 1;
-        }
+  const sortedImages = useMemo(
+    () =>
+      [...product.images].sort(
+        (a, b) => {
+          if (
+            a.is_primary !==
+            b.is_primary
+          ) {
+            return a.is_primary
+              ? -1
+              : 1;
+          }
 
-        return (
-          a.sort_order -
-          b.sort_order
-        );
-      }
-    );
-  }, [product.images]);
+          return (
+            a.sort_order -
+            b.sort_order
+          );
+        }
+      ),
+    [product.images]
+  );
 
   /* =========================================================
      ACTIVE VARIANTS
   ========================================================= */
 
-  const activeVariants = useMemo(() => {
-    return product.variants.filter(
-      (variant) =>
-        variant.is_active
-    );
-  }, [product.variants]);
+  const activeVariants = useMemo(
+    () =>
+      product.variants.filter(
+        (variant) =>
+          variant.is_active
+      ),
+    [product.variants]
+  );
 
   /* =========================================================
-     AVAILABLE SIZES
+     UNIQUE SIZES
   ========================================================= */
 
-  const sizes = useMemo(() => {
-    return Array.from(
-      new Set(
-        activeVariants
-          .map(
-            (variant) =>
-              variant.size
-          )
-          .filter(
-            (
-              size
-            ): size is string =>
-              Boolean(size)
-          )
-      )
-    );
-  }, [activeVariants]);
+  const sizes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          activeVariants
+            .map(
+              (variant) =>
+                variant.size
+            )
+            .filter(
+              (
+                size
+              ): size is string =>
+                Boolean(size)
+            )
+        )
+      ),
+    [activeVariants]
+  );
 
   /* =========================================================
-     AVAILABLE COLORS
+     UNIQUE COLORS
   ========================================================= */
 
-  const colors = useMemo(() => {
-    return Array.from(
-      new Set(
-        activeVariants
-          .map(
-            (variant) =>
-              variant.color
-          )
-          .filter(
-            (
-              color
-            ): color is string =>
-              Boolean(color)
-          )
-      )
-    );
-  }, [activeVariants]);
+  const colors = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          activeVariants
+            .map(
+              (variant) =>
+                variant.color
+            )
+            .filter(
+              (
+                color
+              ): color is string =>
+                Boolean(color)
+            )
+        )
+      ),
+    [activeVariants]
+  );
 
   /* =========================================================
      FIRST AVAILABLE SIZE
   ========================================================= */
 
   const firstAvailableSize =
-    sizes.find(
-      (size) =>
-        activeVariants.some(
-          (variant) =>
-            variant.size ===
-              size &&
-            Number(
-              variant.stock_quantity
-            ) > 0
-        )
+    sizes.find((size) =>
+      activeVariants.some(
+        (variant) =>
+          variant.size ===
+            size &&
+          Number(
+            variant.stock_quantity
+          ) > 0 &&
+          (
+            !colors.length ||
+            variant.color ===
+              (
+                colors.find(
+                  (color) =>
+                    activeVariants.some(
+                      (item) =>
+                        item.color ===
+                          color &&
+                        Number(
+                          item.stock_quantity
+                        ) > 0
+                    )
+                ) ?? null
+              )
+          )
+      )
     ) ?? null;
 
   /* =========================================================
@@ -171,16 +211,15 @@ export function ProductDetails({
   ========================================================= */
 
   const firstAvailableColor =
-    colors.find(
-      (color) =>
-        activeVariants.some(
-          (variant) =>
-            variant.color ===
-              color &&
-            Number(
-              variant.stock_quantity
-            ) > 0
-        )
+    colors.find((color) =>
+      activeVariants.some(
+        (variant) =>
+          variant.color ===
+            color &&
+          Number(
+            variant.stock_quantity
+          ) > 0
+      )
     ) ?? null;
 
   /* =========================================================
@@ -191,8 +230,8 @@ export function ProductDetails({
     selectedImage,
     setSelectedImage,
   ] = useState<string | null>(
-    sortedImages[0]?.image_url ??
-      null
+    sortedImages[0]
+      ?.image_url ?? null
   );
 
   const [
@@ -209,90 +248,75 @@ export function ProductDetails({
     firstAvailableColor
   );
 
+  /*
+   * Stores every selected size
+   * independently.
+   *
+   * Example:
+   *
+   * S -> 2
+   * M -> 1
+   * L -> 3
+   *
+   * Changing the size never changes
+   * another size's quantity.
+   */
+  const [
+    selectedSizes,
+    setSelectedSizes,
+  ] = useState<
+    Record<string, SelectedSize>
+  >({});
+
+  /*
+   * Quantity displayed in the
+   * quantity controller belongs
+   * ONLY to the currently selected size.
+   */
   const [
     quantity,
     setQuantity,
   ] = useState(1);
 
   /* =========================================================
-     GET VARIANT FOR SELECTED OPTIONS
+     EXACT SELECTED VARIANT
   ========================================================= */
 
   const selectedVariant =
     useMemo(() => {
-      /*
-       * First try exact size + color
-       */
-
       if (
-        selectedSize &&
-        selectedColor
+        activeVariants.length ===
+        0
       ) {
-        const exact =
-          activeVariants.find(
-            (variant) =>
-              variant.size ===
-                selectedSize &&
-              variant.color ===
-                selectedColor
-          );
-
-        if (exact) {
-          return exact;
-        }
+        return null;
       }
 
-      /*
-       * Size only
-       */
+      return (
+        activeVariants.find(
+          (variant) => {
+            const sizeMatches =
+              sizes.length === 0
+                ? !variant.size
+                : variant.size ===
+                  selectedSize;
 
-      if (selectedSize) {
-        const sizeVariant =
-          activeVariants.find(
-            (variant) =>
-              variant.size ===
-                selectedSize &&
-              (!selectedColor ||
-                variant.color ===
-                  selectedColor ||
-                variant.color ===
-                  null)
-          );
+            const colorMatches =
+              colors.length === 0
+                ? !variant.color
+                : variant.color ===
+                  selectedColor;
 
-        if (sizeVariant) {
-          return sizeVariant;
-        }
-      }
-
-      /*
-       * Color only
-       */
-
-      if (selectedColor) {
-        const colorVariant =
-          activeVariants.find(
-            (variant) =>
-              variant.color ===
-                selectedColor &&
-              (!selectedSize ||
-                variant.size ===
-                  selectedSize ||
-                variant.size ===
-                  null)
-          );
-
-        if (colorVariant) {
-          return colorVariant;
-        }
-      }
-
-      /*
-       * Product-level fallback
-       */
-
-      return null;
+            return (
+              sizeMatches &&
+              colorMatches
+            );
+          }
+        ) ?? null
+      );
     }, [
       activeVariants,
+      sizes.length,
+      colors.length,
       selectedSize,
       selectedColor,
     ]);
@@ -302,8 +326,10 @@ export function ProductDetails({
   ========================================================= */
 
   const currentPrice =
-    selectedVariant?.sale_price ??
-    selectedVariant?.regular_price ??
+    selectedVariant
+      ?.sale_price ??
+    selectedVariant
+      ?.regular_price ??
     product.sale_price ??
     product.regular_price;
 
@@ -321,7 +347,49 @@ export function ProductDetails({
         );
 
   /* =========================================================
+     OPTIONS REQUIRED
+  ========================================================= */
+
+  const requiresSize =
+    sizes.length > 0;
+
+  const requiresColor =
+    colors.length > 0;
+
+  /* =========================================================
+     GET VARIANT FOR SIZE
+  ========================================================= */
+
+  function getVariantForSize(
+    size: string
+  ) {
+    return (
+      activeVariants.find(
+        (variant) => {
+          const sizeMatches =
+            variant.size ===
+            size;
+
+          const colorMatches =
+            colors.length === 0
+              ? !variant.color
+              : variant.color ===
+                selectedColor;
+
+          return (
+            sizeMatches &&
+            colorMatches
+          );
+        }
+      ) ?? null
+    );
+  }
+
+  /* =========================================================
      SIZE STOCK
+     
+     ONLY checks availability.
+     NEVER changes quantity.
   ========================================================= */
 
   function getSizeStock(
@@ -337,17 +405,12 @@ export function ProductDetails({
             return false;
           }
 
-          /*
-           * If a color has been selected,
-           * use that color's stock.
-           */
-
-          if (selectedColor) {
+          if (
+            selectedColor
+          ) {
             return (
               variant.color ===
-                selectedColor ||
-              variant.color ===
-                null
+              selectedColor
             );
           }
 
@@ -370,6 +433,9 @@ export function ProductDetails({
 
   /* =========================================================
      COLOR STOCK
+     
+     ONLY checks availability.
+     NEVER changes quantity.
   ========================================================= */
 
   function getColorStock(
@@ -385,12 +451,12 @@ export function ProductDetails({
             return false;
           }
 
-          if (selectedSize) {
+          if (
+            selectedSize
+          ) {
             return (
               variant.size ===
-                selectedSize ||
-              variant.size ===
-                null
+              selectedSize
             );
           }
 
@@ -412,236 +478,178 @@ export function ProductDetails({
   }
 
   /* =========================================================
-     CHECK IF SIZE IS AVAILABLE
+     SELECTED SIZE LIST
   ========================================================= */
 
-  function isSizeAvailable(
-    size: string
-  ) {
-    return (
-      getSizeStock(size) > 0
+  const selectedSizeList =
+    useMemo(
+      () =>
+        Object.values(
+          selectedSizes
+        ).sort((a, b) => {
+          const aIndex =
+            sizes.indexOf(
+              a.size
+            );
+
+          const bIndex =
+            sizes.indexOf(
+              b.size
+            );
+
+          return (
+            aIndex - bIndex
+          );
+        }),
+      [selectedSizes, sizes]
     );
-  }
 
   /* =========================================================
-     CHECK IF COLOR IS AVAILABLE
+     TOTAL SELECTED QUANTITY
+     
+     Useful for displaying how many
+     products are going to be ordered.
   ========================================================= */
 
-  function isColorAvailable(
-    color: string
-  ) {
-    return (
-      getColorStock(color) > 0
+  const totalSelectedQuantity =
+    useMemo(
+      () =>
+        selectedSizeList.reduce(
+          (total, item) =>
+            total +
+            item.quantity,
+          0
+        ),
+      [selectedSizeList]
     );
-  }
 
   /* =========================================================
-     PURCHASE VALIDATION
+     CAN PURCHASE
   ========================================================= */
 
-  const requiresSize =
-    sizes.length > 0;
-
-  const requiresColor =
-    colors.length > 0;
+  const hasSelectedSizes =
+    requiresSize
+      ? selectedSizeList.length >
+        0
+      : true;
 
   const canPurchase =
     currentStock > 0 &&
     (!requiresSize ||
       selectedSize !== null) &&
     (!requiresColor ||
-      selectedColor !== null);
+      selectedColor !== null) &&
+    quantity >= 1 &&
+    quantity <= currentStock &&
+    hasSelectedSizes;
 
   /* =========================================================
-     SELECT SIZE
+     ADD SELECTED ITEMS TO CART
+     
+     Every selected size becomes
+     a separate cart item.
   ========================================================= */
 
-  function handleSelectSize(
-    size: string
-  ) {
+  function addSelectedItemsToCart() {
+    /*
+     * Product without variants.
+     */
     if (
-      !isSizeAvailable(size)
+      activeVariants.length ===
+      0
     ) {
+      addToCart({
+        productId:
+          product.id,
+
+        productName:
+          product.name,
+
+        productSlug:
+          product.slug,
+
+        variantId:
+          null,
+
+        variant:
+          null,
+
+        imageUrl:
+          selectedImage,
+
+        size:
+          null,
+
+        color:
+          null,
+
+        price:
+          Number(
+            currentPrice
+          ),
+
+        quantity,
+      });
+
       return;
     }
 
-    setSelectedSize(size);
-
     /*
-     * Reset quantity when
-     * changing size.
+     * Add every selected size
+     * independently.
      */
+    selectedSizeList.forEach(
+      (selected) => {
+        const variant =
+          selected.variant ??
+          getVariantForSize(
+            selected.size
+          );
 
-    setQuantity(1);
+        if (!variant) {
+          return;
+        }
 
-    /*
-     * If selected color does not
-     * exist for this size, select
-     * the first available color.
-     */
+        const price =
+          variant.sale_price ??
+          variant.regular_price ??
+          product.sale_price ??
+          product.regular_price;
 
-    if (selectedColor) {
-      const compatible =
-        activeVariants.some(
-          (variant) =>
-            variant.size ===
-              size &&
-            (variant.color ===
-              selectedColor ||
-              variant.color ===
-                null) &&
-            Number(
-              variant.stock_quantity
-            ) > 0
-        );
+        addToCart({
+          productId:
+            product.id,
 
-      if (!compatible) {
-        const nextColor =
-          colors.find(
-            (color) =>
-              activeVariants.some(
-                (variant) =>
-                  variant.size ===
-                    size &&
-                  variant.color ===
-                    color &&
-                  Number(
-                    variant.stock_quantity
-                  ) > 0
-              )
-          ) ?? null;
+          productName:
+            product.name,
 
-        setSelectedColor(
-          nextColor
-        );
+          productSlug:
+            product.slug,
+
+          variantId:
+            variant.id,
+
+          variant,
+
+          imageUrl:
+            selectedImage,
+
+          size:
+            variant.size ??
+            selected.size,
+
+          color:
+            variant.color ??
+            selectedColor,
+
+          price:
+            Number(price),
+
+          quantity:
+            selected.quantity,
+        });
       }
-    }
-  }
-
-  /* =========================================================
-     SELECT COLOR
-  ========================================================= */
-
-  function handleSelectColor(
-    color: string
-  ) {
-    if (
-      !isColorAvailable(color)
-    ) {
-      return;
-    }
-
-    setSelectedColor(color);
-
-    setQuantity(1);
-
-    /*
-     * If selected size does not
-     * exist for this color,
-     * choose the first available size.
-     */
-
-    if (selectedSize) {
-      const compatible =
-        activeVariants.some(
-          (variant) =>
-            variant.color ===
-              color &&
-            (variant.size ===
-              selectedSize ||
-              variant.size ===
-                null) &&
-            Number(
-              variant.stock_quantity
-            ) > 0
-        );
-
-      if (!compatible) {
-        const nextSize =
-          sizes.find(
-            (size) =>
-              activeVariants.some(
-                (variant) =>
-                  variant.color ===
-                    color &&
-                  variant.size ===
-                    size &&
-                  Number(
-                    variant.stock_quantity
-                  ) > 0
-              )
-          ) ?? null;
-
-        setSelectedSize(
-          nextSize
-        );
-      }
-    }
-  }
-
-  /* =========================================================
-     QUANTITY
-  ========================================================= */
-
-  function decreaseQuantity() {
-    setQuantity((value) =>
-      Math.max(
-        1,
-        value - 1
-      )
     );
-  }
-
-  function increaseQuantity() {
-    setQuantity((value) =>
-      Math.min(
-        Math.max(
-          0,
-          currentStock
-        ),
-        value + 1
-      )
-    );
-  }
-
-  /* =========================================================
-     CART ITEM
-  ========================================================= */
-
-  function getCartItem() {
-    return {
-      productId:
-        product.id,
-
-      productName:
-        product.name,
-
-      productSlug:
-        product.slug,
-
-      variantId:
-        selectedVariant?.id ??
-        null,
-
-      variant:
-        selectedVariant,
-
-      imageUrl:
-        selectedImage,
-
-      size:
-        selectedVariant?.size ??
-        selectedSize,
-
-      color:
-        selectedVariant?.color ??
-        selectedColor,
-
-      price:
-        Number(currentPrice),
-
-      quantity,
-    };
   }
 
   /* =========================================================
@@ -653,9 +661,7 @@ export function ProductDetails({
       return;
     }
 
-    addToCart(
-      getCartItem()
-    );
+    addSelectedItemsToCart();
   }
 
   /* =========================================================
@@ -667,13 +673,261 @@ export function ProductDetails({
       return;
     }
 
-    addToCart(
-      getCartItem()
-    );
+    addSelectedItemsToCart();
 
     router.push(
       "/checkout"
     );
+  }
+
+  /* =========================================================
+     SELECT SIZE
+     
+     IMPORTANT:
+     Clicking a size NEVER increases
+     quantity.
+     
+     If the size was selected before,
+     its previous quantity is restored.
+     
+     If it is a new size,
+     quantity starts at 1.
+  ========================================================= */
+
+  function handleSelectSize(
+    size: string
+  ) {
+    const stock =
+      getSizeStock(size);
+
+    if (stock <= 0) {
+      return;
+    }
+
+    const existing =
+      selectedSizes[size];
+
+    setSelectedSize(size);
+
+    /*
+     * Existing size:
+     * restore its own quantity.
+     *
+     * New size:
+     * start from quantity 1.
+     */
+    setQuantity(
+      existing?.quantity ??
+        1
+    );
+
+    /*
+     * If this size is not yet
+     * selected, add it with
+     * quantity 1.
+     */
+    if (!existing) {
+      const variant =
+        getVariantForSize(
+          size
+        );
+
+      setSelectedSizes(
+        (current) => ({
+          ...current,
+          [size]: {
+            size,
+            variant,
+            quantity: 1,
+          },
+        })
+      );
+    }
+  }
+
+  /* =========================================================
+     SELECT COLOR
+     
+     Since the current requirement
+     is multiple sizes under the
+     same color, changing color
+     starts a fresh selection.
+  ========================================================= */
+
+  function handleSelectColor(
+    color: string
+  ) {
+    const stock =
+      getColorStock(color);
+
+    if (stock <= 0) {
+      return;
+    }
+
+    setSelectedColor(color);
+
+    /*
+     * New color = fresh size selection.
+     */
+    setSelectedSizes({});
+
+    setSelectedSize(
+      null
+    );
+
+    setQuantity(1);
+  }
+
+  /* =========================================================
+     UPDATE CURRENT SIZE QUANTITY
+     
+     ONLY this function changes
+     the quantity of the selected size.
+  ========================================================= */
+
+  function updateCurrentQuantity(
+    nextQuantity: number
+  ) {
+    if (
+      !selectedSize
+    ) {
+      return;
+    }
+
+    const maxStock =
+      getSizeStock(
+        selectedSize
+      );
+
+    const safeQuantity =
+      Math.max(
+        1,
+        Math.min(
+          maxStock,
+          nextQuantity
+        )
+      );
+
+    setQuantity(
+      safeQuantity
+    );
+
+    setSelectedSizes(
+      (current) => {
+        const existing =
+          current[
+            selectedSize
+          ];
+
+        if (!existing) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [selectedSize]: {
+            ...existing,
+            quantity:
+              safeQuantity,
+          },
+        };
+      }
+    );
+  }
+
+  /* =========================================================
+     DECREASE QUANTITY
+  ========================================================= */
+
+  function decreaseQuantity() {
+    if (
+      !selectedSize
+    ) {
+      return;
+    }
+
+    updateCurrentQuantity(
+      quantity - 1
+    );
+  }
+
+  /* =========================================================
+     INCREASE QUANTITY
+  ========================================================= */
+
+  function increaseQuantity() {
+    if (
+      !selectedSize
+    ) {
+      return;
+    }
+
+    updateCurrentQuantity(
+      quantity + 1
+    );
+  }
+
+  /* =========================================================
+     REMOVE SELECTED SIZE
+  ========================================================= */
+
+  function removeSelectedSize(
+    size: string
+  ) {
+    setSelectedSizes(
+      (current) => {
+        const updated = {
+          ...current,
+        };
+
+        delete updated[size];
+
+        return updated;
+      }
+    );
+
+    /*
+     * If the removed size is
+     * currently active, select
+     * another remaining size.
+     */
+    if (
+      selectedSize ===
+      size
+    ) {
+      const remaining =
+        selectedSizeList.filter(
+          (item) =>
+            item.size !==
+            size
+        );
+
+      const next =
+        remaining[0];
+
+      if (next) {
+        setSelectedSize(
+          next.size
+        );
+
+        setQuantity(
+          next.quantity
+        );
+      } else {
+        /*
+         * No sizes remain.
+         *
+         * Keep the first available
+         * size ready for selection,
+         * but DO NOT add it automatically.
+         */
+        setSelectedSize(
+          null
+        );
+
+        setQuantity(1);
+      }
+    }
   }
 
   /* =========================================================
@@ -691,7 +945,7 @@ export function ProductDetails({
         <div className="grid gap-7 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5 lg:grid-cols-[minmax(0,390px)_minmax(0,1fr)] lg:gap-8 lg:p-6">
 
           {/* ===================================================
-              IMAGE AREA
+              PRODUCT IMAGE
           ==================================================== */}
 
           <div>
@@ -699,7 +953,9 @@ export function ProductDetails({
 
               {selectedImage ? (
                 <Image
-                  src={selectedImage}
+                  src={
+                    selectedImage
+                  }
                   alt={
                     product.name
                   }
@@ -728,7 +984,7 @@ export function ProductDetails({
 
             {sortedImages.length >
               1 && (
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex gap-2 overflow-x-auto">
                 {sortedImages.map(
                   (image) => (
                     <button
@@ -741,11 +997,11 @@ export function ProductDetails({
                           image.image_url
                         )
                       }
-                      className={`relative h-16 w-16 overflow-hidden rounded-lg border-2 bg-neutral-50 transition ${
+                      className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-neutral-50 ${
                         selectedImage ===
                         image.image_url
                           ? "border-red-500"
-                          : "border-neutral-200 hover:border-neutral-400"
+                          : "border-neutral-200"
                       }`}
                     >
                       <Image
@@ -753,7 +1009,7 @@ export function ProductDetails({
                           image.image_url
                         }
                         alt={
-                          image.alt_text ??
+                          image.alt_text ||
                           product.name
                         }
                         fill
@@ -773,23 +1029,23 @@ export function ProductDetails({
 
           <div className="flex flex-col">
 
-            {/* Brand */}
+            {/* BRAND */}
 
             {product.brand_name && (
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-600">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600">
                 {
                   product.brand_name
                 }
               </p>
             )}
 
-            {/* Name */}
+            {/* PRODUCT NAME */}
 
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">
               {product.name}
             </h1>
 
-            {/* Category */}
+            {/* CATEGORY */}
 
             {product.category_name && (
               <p className="mt-1 text-sm text-neutral-500">
@@ -799,7 +1055,9 @@ export function ProductDetails({
               </p>
             )}
 
-            {/* Price */}
+            {/* =================================================
+                PRICE
+            ================================================== */}
 
             <div className="mt-5 flex items-center gap-3">
               <span className="text-2xl font-bold text-neutral-950">
@@ -809,14 +1067,20 @@ export function ProductDetails({
                 ).toFixed(2)}
               </span>
 
-              {product.sale_price !==
-                null &&
-                Number(
-                  product.regular_price
-                ) >
-                  Number(
-                    product.sale_price
-                  ) && (
+              {selectedVariant &&
+                selectedVariant.sale_price !==
+                  null && (
+                  <span className="text-sm text-neutral-400 line-through">
+                    ৳
+                    {Number(
+                      selectedVariant.regular_price
+                    ).toFixed(2)}
+                  </span>
+                )}
+
+              {!selectedVariant &&
+                product.sale_price !==
+                  null && (
                   <span className="text-sm text-neutral-400 line-through">
                     ৳
                     {Number(
@@ -826,32 +1090,33 @@ export function ProductDetails({
                 )}
             </div>
 
-            {/* Short Description */}
+            {/* =================================================
+                SHORT DESCRIPTION
+            ================================================== */}
 
             {product.short_description && (
-              <p className="mt-6 text-sm leading-7 text-neutral-600">
+              <p className="mt-4 text-sm leading-6 text-neutral-600">
                 {
                   product.short_description
                 }
               </p>
             )}
 
-            <div className="my-6 h-px bg-neutral-200" />
+            <div className="my-6 border-t border-neutral-200" />
 
             {/* =================================================
                 SIZE
             ================================================== */}
 
-            {sizes.length >
-              0 && (
+            {requiresSize && (
               <div>
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-2 flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-neutral-900">
                     Size
                   </h2>
 
                   {selectedSize && (
-                    <span className="text-xs text-neutral-400">
+                    <span className="text-xs text-neutral-500">
                       Selected:{" "}
                       {
                         selectedSize
@@ -863,14 +1128,24 @@ export function ProductDetails({
                 <div className="flex flex-wrap gap-2">
                   {sizes.map(
                     (size) => {
-                      const available =
-                        isSizeAvailable(
+                      const stock =
+                        getSizeStock(
                           size
                         );
+
+                      const outOfStock =
+                        stock <= 0;
 
                       const selected =
                         selectedSize ===
                         size;
+
+                      const alreadyAdded =
+                        Boolean(
+                          selectedSizes[
+                            size
+                          ]
+                        );
 
                       return (
                         <button
@@ -879,25 +1154,34 @@ export function ProductDetails({
                           }
                           type="button"
                           disabled={
-                            !available
+                            outOfStock
                           }
                           onClick={() =>
                             handleSelectSize(
                               size
                             )
                           }
-                          className={`min-w-14 rounded-lg border px-4 py-2.5 text-sm font-medium transition ${
+                          className={`relative min-w-16 rounded-lg border px-4 py-2.5 text-sm font-medium transition ${
                             selected
                               ? "border-red-600 bg-red-600 text-white"
-                              : available
-                                ? "border-neutral-300 bg-white text-neutral-800 hover:border-red-500"
-                                : "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
+                              : alreadyAdded
+                                ? "border-red-300 bg-red-50 text-red-700"
+                                : outOfStock
+                                  ? "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
+                                  : "border-neutral-300 bg-white text-neutral-800 hover:border-red-500"
                           }`}
                         >
                           {size}
 
-                          {!available && (
-                            <span className="ml-1 text-[10px]">
+                          {alreadyAdded &&
+                            !selected && (
+                            <span className="ml-1 text-[9px] font-bold">
+                              ✓
+                            </span>
+                          )}
+
+                          {outOfStock && (
+                            <span className="ml-1 text-[9px]">
                               Out
                             </span>
                           )}
@@ -906,6 +1190,82 @@ export function ProductDetails({
                     }
                   )}
                 </div>
+
+                {/* =================================================
+                    SELECTED SIZES
+                ================================================== */}
+
+                {selectedSizeList.length >
+                  0 && (
+                  <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                        Selected Sizes
+                      </p>
+
+                      <p className="text-xs font-medium text-neutral-500">
+                        {totalSelectedQuantity}{" "}
+                        item
+                        {totalSelectedQuantity !==
+                        1
+                          ? "s"
+                          : ""}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSizeList.map(
+                        (
+                          item
+                        ) => (
+                          <div
+                            key={
+                              item.size
+                            }
+                            className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedSize(
+                                  item.size
+                                );
+
+                                setQuantity(
+                                  item.quantity
+                                );
+                              }}
+                              className="text-xs font-semibold text-neutral-800 hover:text-red-600"
+                            >
+                              {item.size}{" "}
+                              ×{" "}
+                              {
+                                item.quantity
+                              }
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeSelectedSize(
+                                  item.size
+                                )
+                              }
+                              className="flex h-5 w-5 items-center justify-center rounded-full text-neutral-400 transition hover:bg-red-100 hover:text-red-600"
+                              aria-label={`Remove size ${item.size}`}
+                            >
+                              <X
+                                size={
+                                  13
+                                }
+                              />
+                            </button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -913,16 +1273,15 @@ export function ProductDetails({
                 COLOR
             ================================================== */}
 
-            {colors.length >
-              0 && (
-              <div className="mt-6">
-                <div className="mb-3 flex items-center justify-between">
+            {requiresColor && (
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-neutral-900">
                     Color
                   </h2>
 
                   {selectedColor && (
-                    <span className="text-xs text-neutral-400">
+                    <span className="text-xs text-neutral-500">
                       {
                         selectedColor
                       }
@@ -933,10 +1292,13 @@ export function ProductDetails({
                 <div className="flex flex-wrap gap-2">
                   {colors.map(
                     (color) => {
-                      const available =
-                        isColorAvailable(
+                      const stock =
+                        getColorStock(
                           color
                         );
+
+                      const outOfStock =
+                        stock <= 0;
 
                       const selected =
                         selectedColor ===
@@ -949,7 +1311,7 @@ export function ProductDetails({
                           }
                           type="button"
                           disabled={
-                            !available
+                            outOfStock
                           }
                           onClick={() =>
                             handleSelectColor(
@@ -959,17 +1321,15 @@ export function ProductDetails({
                           className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition ${
                             selected
                               ? "border-red-600 bg-red-600 text-white"
-                              : available
-                                ? "border-neutral-300 bg-white text-neutral-800 hover:border-red-500"
-                                : "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
+                              : outOfStock
+                                ? "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
+                                : "border-neutral-300 bg-white text-neutral-800 hover:border-red-500"
                           }`}
                         >
-                          {
-                            color
-                          }
+                          {color}
 
-                          {!available && (
-                            <span className="ml-1 text-[10px]">
+                          {outOfStock && (
+                            <span className="ml-1 text-[9px]">
                               Out
                             </span>
                           )}
@@ -988,7 +1348,7 @@ export function ProductDetails({
             <div className="mt-5">
               {currentStock >
               0 ? (
-                <p className="text-sm font-medium text-green-600">
+                <p className="text-sm font-medium text-emerald-600">
                   {currentStock}{" "}
                   available
                 </p>
@@ -1003,12 +1363,28 @@ export function ProductDetails({
                 QUANTITY
             ================================================== */}
 
-            <div className="mt-6">
-              <h2 className="mb-3 text-sm font-semibold text-neutral-900">
-                Quantity
-              </h2>
+            <div className="mt-5">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-neutral-900">
+                  Quantity
+                </h2>
 
-              <div className="flex h-11 w-fit overflow-hidden rounded-lg border border-neutral-300">
+                {selectedSize && (
+                  <span className="text-xs text-neutral-500">
+                    For size{" "}
+                    <span className="font-semibold text-neutral-800">
+                      {
+                        selectedSize
+                      }
+                    </span>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex w-fit items-center overflow-hidden rounded-lg border border-neutral-300">
+
+                {/* MINUS */}
+
                 <button
                   type="button"
                   onClick={
@@ -1018,18 +1394,24 @@ export function ProductDetails({
                     quantity <=
                       1 ||
                     currentStock <=
-                      0
+                      0 ||
+                    !selectedSize
                   }
-                  className="flex w-11 items-center justify-center border-r border-neutral-300 text-neutral-600 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300"
+                  className="flex h-11 w-11 items-center justify-center border-r border-neutral-300 text-neutral-700 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300"
+                  aria-label="Decrease quantity"
                 >
                   <Minus
                     size={16}
                   />
                 </button>
 
-                <div className="flex w-14 items-center justify-center text-sm font-semibold text-neutral-900">
+                {/* VALUE */}
+
+                <div className="flex h-11 w-12 items-center justify-center text-sm font-semibold text-neutral-900">
                   {quantity}
                 </div>
+
+                {/* PLUS */}
 
                 <button
                   type="button"
@@ -1040,9 +1422,11 @@ export function ProductDetails({
                     quantity >=
                       currentStock ||
                     currentStock <=
-                      0
+                      0 ||
+                    !selectedSize
                   }
-                  className="flex w-11 items-center justify-center border-l border-neutral-300 text-neutral-600 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300"
+                  className="flex h-11 w-11 items-center justify-center border-l border-neutral-300 text-neutral-700 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-300"
+                  aria-label="Increase quantity"
                 >
                   <Plus
                     size={16}
@@ -1057,34 +1441,42 @@ export function ProductDetails({
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
 
+              {/* ADD TO CART */}
+
               <button
                 type="button"
-                onClick={
-                  handleAddToCart
-                }
                 disabled={
                   !canPurchase
                 }
-                className="flex h-12 items-center justify-center gap-2 rounded-lg bg-red-600 px-5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                onClick={
+                  handleAddToCart
+                }
+                className="flex h-12 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
               >
                 <ShoppingBag
                   size={18}
                 />
 
-                {canPurchase
-                  ? "Add to Cart"
-                  : "Out of Stock"}
+                {currentStock <=
+                0
+                  ? "Out of Stock"
+                  : !hasSelectedSizes &&
+                      requiresSize
+                    ? "Select Size"
+                    : "Add to Cart"}
               </button>
+
+              {/* ORDER NOW */}
 
               <button
                 type="button"
-                onClick={
-                  handleOrderNow
-                }
                 disabled={
                   !canPurchase
                 }
-                className="flex h-12 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                onClick={
+                  handleOrderNow
+                }
+                className="flex h-12 items-center justify-center gap-2 rounded-lg bg-red-600 px-5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
               >
                 <Zap
                   size={18}
@@ -1101,22 +1493,26 @@ export function ProductDetails({
         ====================================================== */}
 
         {product.description && (
-          <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-7">
-            <h2 className="text-lg font-bold text-neutral-950">
-              Product Description
-            </h2>
+          <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 lg:p-7">
 
-            <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-400">
-              Product Details
-            </p>
+            <div className="border-b border-neutral-200 pb-4">
+              <h2 className="text-xl font-bold text-neutral-950">
+                Product Description
+              </h2>
 
-            <div className="my-4 h-px bg-neutral-200" />
-
-            <div className="whitespace-pre-line text-sm leading-7 text-neutral-600">
-              {
-                product.description
-              }
+              <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-neutral-400">
+                Product Details
+              </p>
             </div>
+
+            <div className="pt-5">
+              <p className="whitespace-pre-line text-sm leading-7 text-neutral-600 sm:text-base">
+                {
+                  product.description
+                }
+              </p>
+            </div>
+
           </div>
         )}
 
@@ -1126,20 +1522,22 @@ export function ProductDetails({
 
         {relatedProducts.length >
           0 && (
-          <section className="mt-12">
-            <div className="mb-6">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-600">
+          <section className="mt-10">
+
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-600">
                 You May Also Like
               </p>
 
               <h2 className="mt-1 text-2xl font-bold text-neutral-950">
-                You May Also Like
+                Explore More Styles
               </h2>
 
-              <div className="mt-2 h-1 w-12 rounded-full bg-red-600" />
+              <div className="mt-2 h-0.5 w-12 bg-red-600" />
             </div>
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+
               {relatedProducts.map(
                 (item) => {
                   const price =
@@ -1152,9 +1550,11 @@ export function ProductDetails({
                         item.id
                       }
                       href={`/products/${item.slug}`}
-                      className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                      className="group overflow-hidden rounded-xl border border-neutral-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md"
                     >
+
                       <div className="relative aspect-square overflow-hidden bg-neutral-100">
+
                         {item.image_url ? (
                           <Image
                             src={
@@ -1165,7 +1565,7 @@ export function ProductDetails({
                             }
                             fill
                             className="object-contain p-3 transition duration-300 group-hover:scale-105"
-                            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 250px"
+                            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 240px"
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center text-xs text-neutral-400">
@@ -1179,16 +1579,19 @@ export function ProductDetails({
                             Sale
                           </span>
                         )}
+
                       </div>
 
-                      <div className="p-4">
-                        <h3 className="line-clamp-1 text-sm font-semibold text-neutral-900">
+                      <div className="p-3">
+
+                        <h3 className="line-clamp-2 text-sm font-semibold text-neutral-950">
                           {
                             item.name
                           }
                         </h3>
 
                         <div className="mt-2 flex items-center gap-2">
+
                           <span className="text-sm font-bold text-neutral-950">
                             ৳
                             {Number(
@@ -1200,8 +1603,12 @@ export function ProductDetails({
 
                           {item.sale_price !==
                             null &&
-                            item.regular_price >
-                              item.sale_price && (
+                            Number(
+                              item.regular_price
+                            ) >
+                              Number(
+                                item.sale_price
+                              ) && (
                               <span className="text-xs text-neutral-400 line-through">
                                 ৳
                                 {Number(
@@ -1211,15 +1618,24 @@ export function ProductDetails({
                                 )}
                               </span>
                             )}
+
                         </div>
+
+                        <div className="mt-3 text-xs font-medium text-red-600">
+                          View Product →
+                        </div>
+
                       </div>
+
                     </Link>
                   );
                 }
               )}
+
             </div>
           </section>
         )}
+
       </div>
     </section>
   );

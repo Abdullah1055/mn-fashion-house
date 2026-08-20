@@ -5,7 +5,7 @@ export const MAIN_NAVIGATION = [
   },
   {
     title: "Shop",
-    href: "/shop",
+    href: "/products",
   },
   {
     title: "Offers",

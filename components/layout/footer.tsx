@@ -100,16 +100,16 @@ const MAP_URL =
 
 export function Footer() {
   return (
-    <footer className="border-t border-sky-100 bg-sky-50">
+    <footer className="border-t border-sky-100 bg-sky-200">
       {/* Main Footer */}
-      <div className="py-16 sm:py-20">
+      <div className="py-4 sm:py-4">
         <Container>
-          <div className="grid gap-12 lg:grid-cols-[1.35fr_0.8fr_0.9fr_1.25fr]">
+          <div className="grid gap-7 lg:grid-cols-[1.35fr_0.8fr_0.9fr_1.25fr]">
             {/* Brand */}
             <div>
               <Link
                 href="/"
-                className="inline-flex items-center gap-3"
+                className="inline-flex items-center gap-2.5"
                 aria-label="MN Fashion House"
               >
                 <Image
@@ -117,21 +117,21 @@ export function Footer() {
                   alt="MN Fashion House Logo"
                   width={42}
                   height={42}
-                  className="h-11 w-11 object-contain"
+                  className="h-9 w-9 object-contain"
                 />
 
-                <span className="text-xl font-extrabold uppercase tracking-tight text-red-600">
+                <span className="text-lg font-extrabold uppercase tracking-tight text-red-600">
                   MN FASHION HOUSE
                 </span>
               </Link>
 
-              <p className="mt-5 max-w-sm text-sm leading-7 text-slate-600">
+              <p className="mt-3 max-w-sm text-sm leading-6 text-slate-600">
                 Premium fashion for everyday lifestyle.
                 Quality you can trust, style you will love.
               </p>
 
               {/* Social Icons */}
-              <div className="mt-6 flex items-center gap-2.5">
+              <div className="mt-4 flex items-center gap-2">
                 {SOCIAL_LINKS.map(
                   ({
                     label,
@@ -142,19 +142,19 @@ export function Footer() {
                       key={label}
                       href={href}
                       aria-label={label}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
                     >
-                      <Icon size={16} />
+                      <Icon size={15} />
                     </a>
                   )
                 )}
               </div>
 
               {/* Location */}
-              <div className="mt-7">
-                <div className="flex gap-3">
-                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
-                    <MapPin size={17} />
+              <div className="mt-5">
+                <div className="flex gap-2.5">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                    <MapPin size={16} />
                   </div>
 
                   <div>
@@ -162,7 +162,7 @@ export function Footer() {
                       Showroom Address
                     </p>
 
-                    <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
+                    <p className="mt-1 max-w-sm text-sm leading-5 text-slate-600">
                       SS Complex, Under Dutch-Bangla Bank
                       and beside Agrani Bank, Dhangora
                       Bazar, Raiganj, Sirajganj.
@@ -172,10 +172,10 @@ export function Footer() {
                       href={MAP_URL}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-red-600 transition hover:text-red-700"
+                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-red-600 transition hover:text-red-700"
                     >
                       View Location
-                      <ArrowUpRight size={15} />
+                      <ArrowUpRight size={14} />
                     </a>
                   </div>
                 </div>
@@ -188,7 +188,7 @@ export function Footer() {
                 Quick Links
               </h3>
 
-              <ul className="mt-5 space-y-3">
+              <ul className="mt-4 space-y-2.5">
                 {QUICK_LINKS.map(
                   (link) => (
                     <li key={link.title}>
@@ -210,7 +210,7 @@ export function Footer() {
                 Customer Service
               </h3>
 
-              <ul className="mt-5 space-y-3">
+              <ul className="mt-4 space-y-2.5">
                 {CUSTOMER_LINKS.map(
                   (link) => (
                     <li key={link.title}>
@@ -225,10 +225,10 @@ export function Footer() {
                 )}
               </ul>
 
-              <div className="mt-6 space-y-3">
+              <div className="mt-5 space-y-2.5">
                 <div className="flex items-center gap-2.5 text-sm text-slate-600">
                   <Phone
-                    size={16}
+                    size={15}
                     className="text-red-600"
                   />
                   <span>Contact Us</span>
@@ -236,7 +236,7 @@ export function Footer() {
 
                 <div className="flex items-center gap-2.5 text-sm text-slate-600">
                   <Mail
-                    size={16}
+                    size={15}
                     className="text-red-600"
                   />
                   <span>Email Us</span>
@@ -250,14 +250,14 @@ export function Footer() {
                 Stay Connected
               </h3>
 
-              <p className="mt-5 text-sm leading-6 text-slate-600">
+              <p className="mt-4 text-sm leading-5 text-slate-600">
                 Subscribe to get updates on new
                 arrivals, exclusive offers and
                 latest collections.
               </p>
 
-              <form className="mt-5">
-                <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm">
+              <form className="mt-4">
+                <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
                   <input
                     type="email"
                     placeholder="Enter your email"
@@ -267,14 +267,14 @@ export function Footer() {
                   <button
                     type="submit"
                     aria-label="Subscribe"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-red-600 text-white transition hover:bg-red-700"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-red-600 text-white transition hover:bg-red-700"
                   >
-                    <Send size={16} />
+                    <Send size={15} />
                   </button>
                 </div>
               </form>
 
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-slate-400">
                 We respect your privacy. No spam.
               </p>
             </div>
@@ -285,7 +285,7 @@ export function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-sky-100 bg-white/70">
         <Container>
-          <div className="flex flex-col gap-3 py-5 text-center text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:text-left">
+          <div className="flex flex-col gap-2 py-3.5 text-center text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:text-left">
             <p>
               © {new Date().getFullYear()} MN Fashion
               House. All rights reserved.

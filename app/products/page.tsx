@@ -60,60 +60,53 @@ export default async function ProductsPage({
 
   return (
     <main className="min-h-screen bg-neutral-50">
-      <section className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-600">
-              MN Fashion House
-            </p>
+      {/* =====================================================
+          SHOP CONTENT
+      ====================================================== */}
 
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-neutral-950 sm:text-5xl">
-              Shop Our Collection
-            </h1>
+      <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
+        {/* ===================================================
+            FILTER / SEARCH RESULT INFO
+        ==================================================== */}
 
-            <p className="mt-4 text-base leading-7 text-neutral-600">
-              Discover our latest fashion
-              collection, carefully selected
-              for quality, comfort and style.
-            </p>
+        {(search || category) && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
+            <span>
+              Showing results
+              {category && (
+                <>
+                  {" "}
+                  for{" "}
+                  <strong className="text-neutral-900">
+                    {category}
+                  </strong>
+                </>
+              )}
 
-            {(search || category) && (
-              <div className="mt-6 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
-                <span>
-                  Showing results
-                  {category && (
-                    <>
-                      {" "}
-                      for{" "}
-                      <strong className="text-neutral-900">
-                        {category}
-                      </strong>
-                    </>
-                  )}
-                  {search && (
-                    <>
-                      {" "}
-                      matching{" "}
-                      <strong className="text-neutral-900">
-                        "{search}"
-                      </strong>
-                    </>
-                  )}
-                </span>
+              {search && (
+                <>
+                  {" "}
+                  matching{" "}
+                  <strong className="text-neutral-900">
+                    "{search}"
+                  </strong>
+                </>
+              )}
+            </span>
 
-                <a
-                  href="/products"
-                  className="font-semibold text-red-600 hover:text-red-700"
-                >
-                  Clear filters
-                </a>
-              </div>
-            )}
+            <a
+              href="/products"
+              className="font-semibold text-red-600 transition hover:text-red-700"
+            >
+              Clear filters
+            </a>
           </div>
-        </div>
-      </section>
+        )}
 
-      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+        {/* ===================================================
+            PRODUCTS / SEARCH / FILTERS
+        ==================================================== */}
+
         {filteredProducts.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-white px-6 py-20 text-center">
             <h2 className="text-lg font-semibold text-neutral-900">

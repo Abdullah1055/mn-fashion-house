@@ -334,7 +334,7 @@ export function ProductCatalog({
           )}
         </div>
       ) : (
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {filteredProducts.map(
             (product) => (
               <ProductCard

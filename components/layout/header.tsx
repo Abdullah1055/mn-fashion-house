@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingBag } from "lucide-react";
 import { usePathname } from "next/navigation";
+import {
+  Search,
+  ShoppingBag,
+} from "lucide-react";
 
 import { Container } from "@/components/common/container";
 import { useCart } from "@/components/cart/cart-provider";
@@ -10,16 +13,14 @@ import { Logo } from "@/components/shared/logo";
 import { MAIN_NAVIGATION } from "@/config/navigation";
 
 export function Header() {
-  const pathname = usePathname();
   const { itemCount } = useCart();
+  const pathname = usePathname();
 
-  const isActiveRoute = (href: string) => {
-    // Homepage should only be active on exact "/"
+  const isActive = (href: string) => {
     if (href === "/") {
       return pathname === "/";
     }
 
-    // Exact route or any nested route
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -27,13 +28,10 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-sky-100 bg-white/95 backdrop-blur">
       <Container>
         <div className="flex h-15 items-center justify-between gap-6">
-          
+
           {/* Brand */}
-          <Link
-            href="/"
-            className="shrink-0"
-            aria-label="MN Fashion House Home"
-          >
+
+          <div className="shrink-0">
             <div className="flex flex-col">
               <Logo />
 
@@ -41,19 +39,20 @@ export function Header() {
                 Your Confidence, Our Commitment.
               </p>
             </div>
-          </Link>
+          </div>
 
           {/* Navigation */}
+
           <nav className="hidden items-center gap-7 md:flex">
             {MAIN_NAVIGATION.map((item) => {
-              const isActive = isActiveRoute(item.href);
+              const active = isActive(item.href);
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={`group relative py-7 text-sm font-semibold uppercase transition ${
-                    isActive
+                    active
                       ? "text-red-600"
                       : "text-slate-600 hover:text-red-600"
                   }`}
@@ -62,7 +61,7 @@ export function Header() {
 
                   <span
                     className={`absolute bottom-0 left-0 h-0.5 bg-red-600 transition-all duration-200 ${
-                      isActive
+                      active
                         ? "w-full"
                         : "w-0 group-hover:w-full"
                     }`}
@@ -73,9 +72,11 @@ export function Header() {
           </nav>
 
           {/* Actions */}
+
           <div className="flex items-center gap-2">
-            
+
             {/* Search */}
+
             <Link
               href="/products"
               aria-label="Search products"
@@ -85,6 +86,7 @@ export function Header() {
             </Link>
 
             {/* Cart */}
+
             <Link
               href="/cart"
               aria-label={`Shopping cart with ${itemCount} items`}

@@ -7,26 +7,13 @@ import { createClient } from "@/lib/supabase/server";
 import { categorySchema } from "@/schemas/category-schema";
 
 /* =========================================================
-   CREATE CATEGORY
+   CREATE MAIN CATEGORY
 ========================================================= */
 
-export async function createCategory(
+export async function createMainCategory(
   formData: FormData
 ): Promise<void> {
   const supabase = await createClient();
-
-  const parentId =
-    formData.get("parent_id")?.toString().trim() || null;
-
-  /* -------------------------------------------------------
-     Top Category is required
-  ------------------------------------------------------- */
-
-  if (!parentId) {
-    throw new Error(
-      "Please select a top category."
-    );
-  }
 
   const parsed = categorySchema.safeParse({
     name: formData.get("name"),
@@ -34,46 +21,17 @@ export async function createCategory(
     description: formData.get("description"),
     is_active:
       formData.get("is_active") === "on",
-    parent_id: parentId,
+    parent_id: null,
   });
 
   if (!parsed.success) {
     throw new Error(
-      "Invalid category data."
+      "Invalid main category data."
     );
   }
 
   /* -------------------------------------------------------
-     Make sure selected parent is a Main Category
-  ------------------------------------------------------- */
-
-  const {
-    data: parentCategory,
-    error: parentError,
-  } = await supabase
-    .from("categories")
-    .select("id, parent_id")
-    .eq("id", parentId)
-    .maybeSingle();
-
-  if (parentError) {
-    throw new Error(parentError.message);
-  }
-
-  if (!parentCategory) {
-    throw new Error(
-      "Selected top category was not found."
-    );
-  }
-
-  if (parentCategory.parent_id !== null) {
-    throw new Error(
-      "Selected category is not a top category."
-    );
-  }
-
-  /* -------------------------------------------------------
-     Check duplicate name / slug
+     Duplicate name / slug check
   ------------------------------------------------------- */
 
   const {
@@ -98,7 +56,7 @@ export async function createCategory(
   }
 
   /* -------------------------------------------------------
-     Insert Category
+     Insert as Top Level Category
   ------------------------------------------------------- */
 
   const { error } = await supabase
@@ -108,45 +66,28 @@ export async function createCategory(
       slug: parsed.data.slug,
       description: parsed.data.description,
       is_active: parsed.data.is_active,
-      parent_id: parentId,
+      parent_id: null,
     });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  /* -------------------------------------------------------
-     Revalidate
-  ------------------------------------------------------- */
-
-  revalidatePath("/admin/categories");
   revalidatePath("/admin/main-categories");
+  revalidatePath("/admin/categories");
 
-  redirect("/admin/categories");
+  redirect("/admin/main-categories");
 }
 
 /* =========================================================
-   UPDATE CATEGORY
+   UPDATE MAIN CATEGORY
 ========================================================= */
 
-export async function updateCategory(
+export async function updateMainCategory(
   id: string,
   formData: FormData
 ): Promise<void> {
   const supabase = await createClient();
-
-  const parentId =
-    formData.get("parent_id")?.toString().trim() || null;
-
-  /* -------------------------------------------------------
-     Top Category is required
-  ------------------------------------------------------- */
-
-  if (!parentId) {
-    throw new Error(
-      "Please select a top category."
-    );
-  }
 
   const parsed = categorySchema.safeParse({
     name: formData.get("name"),
@@ -154,17 +95,17 @@ export async function updateCategory(
     description: formData.get("description"),
     is_active:
       formData.get("is_active") === "on",
-    parent_id: parentId,
+    parent_id: null,
   });
 
   if (!parsed.success) {
     throw new Error(
-      "Invalid category data."
+      "Invalid main category data."
     );
   }
 
   /* -------------------------------------------------------
-     Make sure current category exists
+     Make sure this is actually a Main Category
   ------------------------------------------------------- */
 
   const {
@@ -177,73 +118,23 @@ export async function updateCategory(
     .maybeSingle();
 
   if (currentError) {
-    throw new Error(
-      currentError.message
-    );
+    throw new Error(currentError.message);
   }
 
   if (!currentCategory) {
     throw new Error(
-      "Category not found."
+      "Main category not found."
+    );
+  }
+
+  if (currentCategory.parent_id !== null) {
+    throw new Error(
+      "This category is not a main category."
     );
   }
 
   /* -------------------------------------------------------
-     Prevent editing a Main Category
-     
-     Main Categories are managed from:
-     /admin/main-categories
-  ------------------------------------------------------- */
-
-  if (currentCategory.parent_id === null) {
-    throw new Error(
-      "Main categories must be managed from the Main Categories section."
-    );
-  }
-
-  /* -------------------------------------------------------
-     Prevent selecting itself as parent
-  ------------------------------------------------------- */
-
-  if (parentId === id) {
-    throw new Error(
-      "A category cannot be its own parent."
-    );
-  }
-
-  /* -------------------------------------------------------
-     Make sure selected parent is a Main Category
-  ------------------------------------------------------- */
-
-  const {
-    data: parentCategory,
-    error: parentError,
-  } = await supabase
-    .from("categories")
-    .select("id, parent_id")
-    .eq("id", parentId)
-    .maybeSingle();
-
-  if (parentError) {
-    throw new Error(
-      parentError.message
-    );
-  }
-
-  if (!parentCategory) {
-    throw new Error(
-      "Selected top category was not found."
-    );
-  }
-
-  if (parentCategory.parent_id !== null) {
-    throw new Error(
-      "Selected category is not a top category."
-    );
-  }
-
-  /* -------------------------------------------------------
-     Check duplicate name / slug
+     Duplicate name / slug check
   ------------------------------------------------------- */
 
   const {
@@ -259,9 +150,7 @@ export async function updateCategory(
     .maybeSingle();
 
   if (checkError) {
-    throw new Error(
-      checkError.message
-    );
+    throw new Error(checkError.message);
   }
 
   if (existing) {
@@ -271,7 +160,7 @@ export async function updateCategory(
   }
 
   /* -------------------------------------------------------
-     Update Category
+     Update
   ------------------------------------------------------- */
 
   const { error } = await supabase
@@ -281,7 +170,7 @@ export async function updateCategory(
       slug: parsed.data.slug,
       description: parsed.data.description,
       is_active: parsed.data.is_active,
-      parent_id: parentId,
+      parent_id: null,
     })
     .eq("id", id);
 
@@ -289,27 +178,23 @@ export async function updateCategory(
     throw new Error(error.message);
   }
 
-  /* -------------------------------------------------------
-     Revalidate
-  ------------------------------------------------------- */
-
-  revalidatePath("/admin/categories");
   revalidatePath("/admin/main-categories");
+  revalidatePath("/admin/categories");
 
-  redirect("/admin/categories");
+  redirect("/admin/main-categories");
 }
 
 /* =========================================================
-   DELETE CATEGORY
+   DELETE MAIN CATEGORY
 ========================================================= */
 
-export async function deleteCategory(
+export async function deleteMainCategory(
   id: string
 ): Promise<void> {
   const supabase = await createClient();
 
   /* -------------------------------------------------------
-     Make sure category exists
+     Make sure category exists and is top-level
   ------------------------------------------------------- */
 
   const {
@@ -322,32 +207,48 @@ export async function deleteCategory(
     .maybeSingle();
 
   if (categoryError) {
-    throw new Error(
-      categoryError.message
-    );
+    throw new Error(categoryError.message);
   }
 
   if (!category) {
     throw new Error(
-      "Category not found."
+      "Main category not found."
+    );
+  }
+
+  if (category.parent_id !== null) {
+    throw new Error(
+      "Only main categories can be deleted here."
     );
   }
 
   /* -------------------------------------------------------
-     Prevent deleting Main Category from here
+     Check child categories
   ------------------------------------------------------- */
 
-  if (category.parent_id === null) {
+  const {
+    count: childCount,
+    error: childError,
+  } = await supabase
+    .from("categories")
+    .select("id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("parent_id", id);
+
+  if (childError) {
+    throw new Error(childError.message);
+  }
+
+  if ((childCount ?? 0) > 0) {
     throw new Error(
-      "Main categories must be deleted from the Main Categories section."
+      `"${category.name}" has child categories. Delete or move those categories first.`
     );
   }
 
   /* -------------------------------------------------------
      Check products
-     
-     A category assigned to products cannot be
-     deleted until those products are moved.
   ------------------------------------------------------- */
 
   const {
@@ -362,9 +263,7 @@ export async function deleteCategory(
     .eq("category_id", id);
 
   if (productError) {
-    throw new Error(
-      productError.message
-    );
+    throw new Error(productError.message);
   }
 
   if ((productCount ?? 0) > 0) {
@@ -374,25 +273,22 @@ export async function deleteCategory(
   }
 
   /* -------------------------------------------------------
-     Delete Category
+     Delete
   ------------------------------------------------------- */
 
-  const { error: deleteError } =
-    await supabase
-      .from("categories")
-      .delete()
-      .eq("id", id);
+  const { error: deleteError } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", id);
 
   if (deleteError) {
-    throw new Error(
-      deleteError.message
-    );
+    throw new Error(deleteError.message);
   }
 
   /* -------------------------------------------------------
      Revalidate
   ------------------------------------------------------- */
 
-  revalidatePath("/admin/categories");
   revalidatePath("/admin/main-categories");
+  revalidatePath("/admin/categories");
 }

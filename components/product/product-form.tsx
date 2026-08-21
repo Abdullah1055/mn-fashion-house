@@ -20,6 +20,7 @@ import {
 type Category = {
   id: string;
   name: string;
+  parent_id?: string | null;
 };
 
 type Brand = {
@@ -107,6 +108,23 @@ export function ProductForm({
 
   const [error, setError] =
     useState<string | null>(null);
+
+  const mainCategories = categories.filter(
+    (category) =>
+      category.parent_id === null
+  );
+
+  const initialMainCategory =
+    product?.category_id
+      ? categories.find(
+          (category) =>
+            category.id ===
+            product.category_id
+        )?.parent_id ?? ""
+      : "";
+
+  const [selectedMainCategory, setSelectedMainCategory] =
+    useState(initialMainCategory);
 
   /* =======================================================
      INITIAL SIZE ROWS
@@ -345,12 +363,48 @@ export function ProductForm({
         </div>
 
         {/* =================================================
-            ROW 1
+            BASIC INFORMATION FIELDS
         ================================================== */}
 
-        <div className="grid gap-4 xl:grid-cols-5">
+        <div className="grid gap-4 xl:grid-cols-7">
 
-          {/* Category */}
+          <div>
+            <label
+              htmlFor="main_category"
+              className="mb-2 block text-sm font-medium text-slate-800"
+            >
+              Main Category
+            </label>
+
+            <select
+              id="main_category"
+              value={selectedMainCategory}
+              onChange={(event) => {
+                setSelectedMainCategory(event.target.value);
+
+                const categorySelect =
+                  document.getElementById(
+                    "category_id"
+                  ) as HTMLSelectElement | null;
+
+                if (categorySelect) {
+                  categorySelect.value = "";
+                }
+              }}
+              className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="">Select main category</option>
+
+              {mainCategories.map((category) => (
+                <option
+                  key={category.id}
+                  value={category.id}
+                >
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div>
             <label
@@ -364,30 +418,29 @@ export function ProductForm({
               id="category_id"
               name="category_id"
               required
-              defaultValue={
-                product?.category_id ??
-                ""
-              }
+              defaultValue={product?.category_id ?? ""}
               className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
-              <option value="">
-                Select category
-              </option>
+              <option value="">Select category</option>
 
-              {categories.map(
-                (category) => (
+              {categories
+                .filter(
+                  (category) =>
+                    category.parent_id !== null &&
+                    (!selectedMainCategory ||
+                      category.parent_id ===
+                        selectedMainCategory)
+                )
+                .map((category) => (
                   <option
                     key={category.id}
                     value={category.id}
                   >
                     {category.name}
                   </option>
-                )
-              )}
+                ))}
             </select>
           </div>
-
-          {/* Brand */}
 
           <div>
             <label
@@ -400,30 +453,21 @@ export function ProductForm({
             <select
               id="brand_id"
               name="brand_id"
-              defaultValue={
-                product?.brand_id ??
-                ""
-              }
+              defaultValue={product?.brand_id ?? ""}
               className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
-              <option value="">
-                No brand
-              </option>
+              <option value="">No brand</option>
 
-              {brands.map(
-                (brand) => (
-                  <option
-                    key={brand.id}
-                    value={brand.id}
-                  >
-                    {brand.name}
-                  </option>
-                )
-              )}
+              {brands.map((brand) => (
+                <option
+                  key={brand.id}
+                  value={brand.id}
+                >
+                  {brand.name}
+                </option>
+              ))}
             </select>
           </div>
-
-          {/* Product Name */}
 
           <div>
             <label
@@ -438,16 +482,11 @@ export function ProductForm({
               name="name"
               type="text"
               required
-              defaultValue={
-                product?.name ??
-                ""
-              }
+              defaultValue={product?.name ?? ""}
               placeholder="Enter product name"
               className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
-
-          {/* Slug */}
 
           <div>
             <label
@@ -462,16 +501,11 @@ export function ProductForm({
               name="slug"
               type="text"
               required
-              defaultValue={
-                product?.slug ??
-                ""
-              }
+              defaultValue={product?.slug ?? ""}
               placeholder="product-slug"
               className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
-
-          {/* SKU */}
 
           <div>
             <label
@@ -485,89 +519,68 @@ export function ProductForm({
               id="sku"
               name="sku"
               type="text"
-              defaultValue={
-                product?.sku ??
-                ""
-              }
+              defaultValue={product?.sku ?? ""}
               placeholder="SKU-001"
+              className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="color"
+              className="mb-2 block text-sm font-medium text-slate-800"
+            >
+              Color
+            </label>
+
+            <input
+              id="color"
+              name="color"
+              type="text"
+              defaultValue={product?.color ?? ""}
+              placeholder="e.g. Red"
               className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
         </div>
 
-        {/* =================================================
-            SHORT DESCRIPTION
-        ================================================== */}
+        <div className="mt-5 grid gap-4 xl:grid-cols-2">
 
-        <div className="mt-5">
-          <label
-            htmlFor="short_description"
-            className="mb-2 block text-sm font-medium text-slate-800"
-          >
-            Short Description
-          </label>
+          <div>
+            <label
+              htmlFor="short_description"
+              className="mb-2 block text-sm font-medium text-slate-800"
+            >
+              Short Description
+            </label>
 
-          <textarea
-            id="short_description"
-            name="short_description"
-            rows={3}
-            defaultValue={
-              product?.short_description ??
-              ""
-            }
-            placeholder="Short product description"
-            className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
+            <textarea
+              id="short_description"
+              name="short_description"
+              rows={5}
+              defaultValue={product?.short_description ?? ""}
+              placeholder="Short product description"
+              className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
 
-        {/* =================================================
-            DESCRIPTION
-        ================================================== */}
+          <div>
+            <label
+              htmlFor="description"
+              className="mb-2 block text-sm font-medium text-slate-800"
+            >
+              Description
+            </label>
 
-        <div className="mt-5">
-          <label
-            htmlFor="description"
-            className="mb-2 block text-sm font-medium text-slate-800"
-          >
-            Description
-          </label>
-
-          <textarea
-            id="description"
-            name="description"
-            rows={7}
-            defaultValue={
-              product?.description ??
-              ""
-            }
-            placeholder="Detailed product description"
-            className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
-
-        {/* =================================================
-            COLOR
-        ================================================== */}
-
-        <div className="mt-5 max-w-sm">
-          <label
-            htmlFor="color"
-            className="mb-2 block text-sm font-medium text-slate-800"
-          >
-            Color
-          </label>
-
-          <input
-            id="color"
-            name="color"
-            type="text"
-            defaultValue={
-              product?.color ??
-              ""
-            }
-            placeholder="e.g. Red"
-            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
+            <textarea
+              id="description"
+              name="description"
+              rows={5}
+              defaultValue={product?.description ?? ""}
+              placeholder="Detailed product description"
+              className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
         </div>
 
       </section>

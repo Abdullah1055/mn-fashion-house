@@ -3,6 +3,11 @@ export interface ProductCategory {
   name: string;
 }
 
+export interface ProductMainCategory {
+  id: string;
+  name: string;
+}
+
 export interface ProductBrand {
   id: string;
   name: string;
@@ -48,6 +53,8 @@ export interface Product {
   brand_id: string | null;
 
   category?: ProductCategory | null;
+
+  main_category?: ProductMainCategory | null;
 
   brand?: ProductBrand | null;
 

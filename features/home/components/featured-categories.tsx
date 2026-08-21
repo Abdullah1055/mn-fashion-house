@@ -1,4 +1,4 @@
-import { getActiveCategories } from "@/lib/services/category.service";
+import { getStoreCategories } from "@/lib/services/category.service";
 import { getCatalogProducts } from "@/lib/services/catalog.service";
 
 import { CategoryProducts } from "./category-products";
@@ -6,7 +6,7 @@ import { CategoryProducts } from "./category-products";
 export async function FeaturedCategories() {
   const [categories, products] =
     await Promise.all([
-      getActiveCategories(),
+      getStoreCategories(),
       getCatalogProducts(),
     ]);
 

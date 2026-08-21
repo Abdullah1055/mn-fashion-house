@@ -6,6 +6,7 @@ export type StoreCategory = {
   id: string;
   name: string;
   slug: string;
+  parent_id: string | null;
 };
 
 /* =========================================================
@@ -82,6 +83,80 @@ export async function getCategoryById(
 }
 
 /* =========================================================
+   CATEGORY HIERARCHY
+========================================================= */
+
+/**
+ * Returns only top-level categories.
+ *
+ * Example:
+ * Men
+ * Women
+ * Kids
+ * Others
+ */
+export async function getParentCategories(): Promise<
+  Category[]
+> {
+  const supabase =
+    await createClient();
+
+  const { data, error } =
+    await supabase
+      .from("categories")
+      .select("*")
+      .is("parent_id", null)
+      .eq("is_active", true)
+      .order("sort_order", {
+        ascending: true,
+      })
+      .order("name", {
+        ascending: true,
+      });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as Category[];
+}
+
+/**
+ * Returns child categories of a specific parent.
+ *
+ * Example:
+ * Men
+ * ├── Shirts
+ * ├── Polo Shirts
+ * └── Punjabi
+ */
+export async function getChildCategories(
+  parentId: string
+): Promise<Category[]> {
+  const supabase =
+    await createClient();
+
+  const { data, error } =
+    await supabase
+      .from("categories")
+      .select("*")
+      .eq("parent_id", parentId)
+      .eq("is_active", true)
+      .order("sort_order", {
+        ascending: true,
+      })
+      .order("name", {
+        ascending: true,
+      });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as Category[];
+}
+
+/* =========================================================
    STOREFRONT
 ========================================================= */
 
@@ -95,7 +170,7 @@ export async function getStoreCategories(): Promise<
     await supabase
       .from("categories")
       .select(
-        "id, name, slug"
+        "id, name, slug, parent_id"
       )
       .eq("is_active", true)
       .order("sort_order", {

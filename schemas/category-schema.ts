@@ -19,6 +19,18 @@ export const categorySchema = z.object({
     .optional(),
 
   is_active: z.boolean(),
+
+  parent_id: z.preprocess(
+    (value) => {
+      if (value === "" || value === undefined) {
+        return null;
+      }
+
+      return value;
+    },
+    z.string().uuid().nullable()
+  ),
 });
 
-export type CategorySchema = z.infer<typeof categorySchema>;
+export type CategorySchema =
+  z.infer<typeof categorySchema>;

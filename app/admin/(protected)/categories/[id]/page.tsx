@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { CategoryForm } from "@/components/category/category-form";
-import { getCategoryById } from "@/lib/services/category.service";
+import {
+  getCategoryById,
+  getParentCategories,
+} from "@/lib/services/category.service";
 
 export default async function EditCategoryPage({
   params,
@@ -10,7 +13,11 @@ export default async function EditCategoryPage({
 }) {
   const { id } = await params;
 
-  const category = await getCategoryById(id);
+  const [category, parentCategories] =
+    await Promise.all([
+      getCategoryById(id),
+      getParentCategories(),
+    ]);
 
   if (!category) {
     notFound();
@@ -31,6 +38,7 @@ export default async function EditCategoryPage({
       <CategoryForm
         mode="edit"
         category={category}
+        parentCategories={parentCategories}
       />
     </div>
   );

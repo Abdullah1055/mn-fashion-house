@@ -42,7 +42,9 @@ export function ProductTable({
 
   const totalPages = Math.max(
     1,
-    Math.ceil(products.length / pageSize)
+    Math.ceil(
+      products.length / pageSize
+    )
   );
 
   const safeCurrentPage = Math.min(
@@ -51,7 +53,8 @@ export function ProductTable({
   );
 
   const startIndex =
-    (safeCurrentPage - 1) * pageSize;
+    (safeCurrentPage - 1) *
+    pageSize;
 
   const endIndex =
     startIndex + pageSize;
@@ -80,7 +83,10 @@ export function ProductTable({
 
   function goToNextPage() {
     setCurrentPage((page) =>
-      Math.min(totalPages, page + 1)
+      Math.min(
+        totalPages,
+        page + 1
+      )
     );
   }
 
@@ -152,7 +158,9 @@ export function ProductTable({
 
   return (
     <>
-      {/* Product Table */}
+      {/* =====================================================
+          PRODUCT TABLE
+      ====================================================== */}
 
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
         <div className="overflow-x-auto">
@@ -161,6 +169,14 @@ export function ProductTable({
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">
                   Product
+                </th>
+
+                <th className="px-6 py-4 text-left font-semibold">
+                  Main Category
+                </th>
+
+                <th className="px-6 py-4 text-left font-semibold">
+                  Category
                 </th>
 
                 <th className="px-6 py-4 text-left font-semibold">
@@ -222,6 +238,42 @@ export function ProductTable({
                               product.short_description
                             }
                           </p>
+                        )}
+                      </td>
+
+                      {/* Main Category */}
+
+                      <td className="px-6 py-4">
+                        {product.main_category ? (
+                          <span className="inline-flex rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700">
+                            {
+                              product
+                                .main_category
+                                .name
+                            }
+                          </span>
+                        ) : (
+                          <span className="text-sm text-neutral-400">
+                            —
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Category */}
+
+                      <td className="px-6 py-4">
+                        {product.category ? (
+                          <span className="text-sm font-medium text-neutral-700">
+                            {
+                              product
+                                .category
+                                .name
+                            }
+                          </span>
+                        ) : (
+                          <span className="text-sm text-neutral-400">
+                            —
+                          </span>
                         )}
                       </td>
 
@@ -359,7 +411,9 @@ export function ProductTable({
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* ===================================================
+            PAGINATION
+        ==================================================== */}
 
         <div className="flex flex-col gap-4 border-t bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           {/* Showing */}
@@ -460,7 +514,9 @@ export function ProductTable({
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* =====================================================
+          DELETE CONFIRMATION MODAL
+      ====================================================== */}
 
       {deleteProductData && (
         <div
